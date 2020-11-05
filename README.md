@@ -1,6 +1,6 @@
 # Web Engineering 2020-2021 / URL Shortener
 
-[![Build Status](https://travis-ci.com/UNIZAR-30246-WebEngineering/UrlShortener.svg?branch=master)](https://travis-ci.com/UNIZAR-30246-WebEngineering/UrlShortener)
+[![Build Status](https://travis-ci.com/github/andrewknoll/UrlShortener)](https://travis-ci.com/github/andrewknoll/UrlShortener)
 
 This is the start repository for the project developed in this course. 
 
