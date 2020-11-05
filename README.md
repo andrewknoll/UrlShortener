@@ -1,6 +1,6 @@
 # Web Engineering 2020-2021 / URL Shortener
 
-[![Build Status](https://travis-ci.com/github/andrewknoll/UrlShortener.svg?branch=master)](https://travis-ci.com/github/andrewknoll/UrlShortener)
+[![Build Status](https://travis-ci.com/andrewknoll/UrlShortener.svg?branch=master)](https://travis-ci.com/github/andrewknoll/UrlShortener)
 
 This is the start repository for the project developed in this course. 
 
