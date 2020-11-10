@@ -15,18 +15,20 @@
     <div class="container-full">
         <div class="row">
             <div class="col-lg-12 text-center">
-                <h1>URL Shortener</h1>
-                <p class="lead">A front-end example page for the project</p>
+                <img src="images/cover.png" width="500" height="230">
                 <br>
-                <form action="" class="col-lg-12" id="shortener" role="form">
                     <div class="input-group input-group-lg col-sm-offset-4 col-sm-4">
-                        <input class="center-block form-control input-lg" name="url" placeholder="Enter a URL"
+                        <input id="urlInput" class="center-block form-control input-lg" name="url" placeholder="Enter a URL"
                             title="Enter a URL" type="text">
-                        <span class="input-group-btn"><button class="btn btn-lg btn-primary" type="submit">Short
+                        <span class="input-group-btn"><button id="searchButton" class="btn btn-lg btn-primary">Short
                                 me!</button></span>
                     </div>
-                </form>
             </div>
+        </div>
+        <div>
+            <span>
+                <p id="safeBrowsingCheck" style="color: rgb(62,63,69);"> </p>
+            </span>
         </div>
         <div class="row">
             <div class="col-lg-12 text-center">
