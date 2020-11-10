@@ -1,7 +1,8 @@
 package urlshortener.web;
 
-import java.net.MalformedURLException;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.http.HttpHeaders;
@@ -67,7 +68,7 @@ public class UrlShortenerController {
                                                 HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
         "https"});
-    if (urlValidator.isValid(url)) {
+    if (urlValidator.isValid(url) && this.reachableURL(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
@@ -86,5 +87,24 @@ public class UrlShortenerController {
     h.setLocation(URI.create(l.getTarget()));
     return new ResponseEntity<>(h, HttpStatus.valueOf(l.getMode()));
   }
-  
+
+  /**
+   * 
+   * @param inputURL URL to being shortened
+   * @return True, if and only if, inputURL is reachable.
+   */
+  private boolean reachableURL(String inputURL){
+    HttpURLConnection httpURLConn;
+    try{
+      httpURLConn = (HttpURLConnection) new URL(inputURL).openConnection();
+      // HEAD request is like GET request but just expecting headers, not resources
+      httpURLConn.setRequestMethod("HEAD");
+      // System.out.println("Status request: " + httpURLConn.getResponseCode())
+      return httpURLConn.getResponseCode() == HttpURLConnection.HTTP_OK;
+    }
+    catch(Exception e){
+      System.out.println("Error: " + e.getMessage());
+      return false;
+    }
+  }
 }
