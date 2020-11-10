@@ -1,5 +1,6 @@
 package urlshortener.web;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.validator.routines.UrlValidator;
@@ -11,8 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
+import urlshortener.service.QRService;
 import urlshortener.service.ShortURLService;
 
 @RestController
@@ -21,18 +25,36 @@ public class UrlShortenerController {
 
   private final ClickService clickService;
 
-  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService) {
+  private final QRService qrService;
+
+  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService) {
     this.shortUrlService = shortUrlService;
     this.clickService = clickService;
+    this.qrService = qrService;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id,
-                                      HttpServletRequest request) {
+      HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
       clickService.saveClick(id, extractIP(request));
       return createSuccessfulRedirectToResponse(l);
+    } else {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+  }
+  
+  @RequestMapping(value = "/qr", method = RequestMethod.POST)
+  public ResponseEntity<?> getQRCode(@RequestParam("hash") String hash,
+                                     @RequestParam(value = "fileName", required = false) String fileName,
+                                     HttpServletRequest request) {
+    ShortURL l = shortUrlService.findByKey(hash);
+    if (l != null) {
+      QR qr = qrService.save(l, fileName);
+      HttpHeaders h = new HttpHeaders();
+      h.setLocation(qr.getUri());
+      return new ResponseEntity<>(qr, h, HttpStatus.CREATED);
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
@@ -42,7 +64,7 @@ public class UrlShortenerController {
   public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
                                             @RequestParam(value = "sponsor", required = false)
                                                 String sponsor,
-                                            HttpServletRequest request) {
+                                                HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
         "https"});
     if (urlValidator.isValid(url)) {
@@ -64,4 +86,5 @@ public class UrlShortenerController {
     h.setLocation(URI.create(l.getTarget()));
     return new ResponseEntity<>(h, HttpStatus.valueOf(l.getMode()));
   }
+  
 }
