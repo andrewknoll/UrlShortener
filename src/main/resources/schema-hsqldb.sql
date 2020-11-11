@@ -25,7 +25,7 @@ CREATE TABLE QRCODE
 (
     HASH      VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Foreing key
     FILENAME  VARCHAR(100),                                                -- FileName (if provided)
-    IMAGE     BLOB(5K) NOT NULL,                                           -- QR code image
+    IMAGE     BLOB(5K) NOT NULL                                            -- QR code image
 );
 
 -- Click

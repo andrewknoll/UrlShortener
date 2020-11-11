@@ -8,10 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
-
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
+
+import java.io.File;
+import java.io.ObjectInputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Blob;
+
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +32,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
+import net.glxn.qrgen.javase.QRCode;
+import urlshortener.domain.QR;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -69,6 +79,29 @@ public class SystemTests {
     assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/f684a3c4"));
     assertThat(rc.read("$.target"), is("http://example.com/"));
     assertThat(rc.read("$.sponsor"), is(nullValue()));
+  }
+
+
+  @Test
+  public void testGenerateQR() throws Exception {
+
+    ResponseEntity<String> entityLink = postLink("http://example.com/");
+
+    MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
+    parts.add("hash", JsonPath.parse(entityLink.getBody()).read("$.hash"));
+    parts.add("filename", "example.png");
+    ResponseEntity<QR> entityQR = restTemplate.postForEntity("/qr", parts, QR.class);
+
+    assertThat(entityQR.getStatusCode(), is(HttpStatus.CREATED));
+    //assertThat(entityQR.getHeaders().getLocation(),
+    //    is(new URI("http://localhost:" + this.port + "/example.png")));
+    assertThat(entityQR.getHeaders().getContentType(), is(new MediaType("application", "json")));
+    QR rc = entityQR.getBody();
+    assertThat(rc.getHash(), is("f684a3c4"));
+    //assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/example.png"));
+    //assertThat(rc.read("$.fileName"), is("example.png"));
+    QRCode qr = QRCode.from(JsonPath.parse(entityLink.getBody()).read("$.uri").toString());
+    assert (!Files.isSameFile(Path.of(rc.getQR().getPath()), Path.of(qr.file().getPath())));
   }
 
   @Test

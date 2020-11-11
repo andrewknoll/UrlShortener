@@ -47,7 +47,7 @@ public class UrlShortenerController {
   }
   
   @RequestMapping(value = "/qr", method = RequestMethod.POST)
-  public ResponseEntity<?> getQRCode(@RequestParam("hash") String hash,
+  public ResponseEntity<QR> getQRCode(@RequestParam("hash") String hash,
                                      @RequestParam(value = "fileName", required = false) String fileName,
                                      HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(hash);

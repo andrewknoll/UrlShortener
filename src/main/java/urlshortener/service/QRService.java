@@ -33,7 +33,7 @@ public class QRService {
         .hash(su.getHash())
         .fileName(fileName)
         .uri((String h, String f) -> linkTo(methodOn(UrlShortenerController.class).getQRCode(h, f, null)).toUri())
-        .code(QRCode.from(su.getUri().getPath()).file()).build();
+        .code(QRCode.from(su.getTarget()).file()).build();
     return QRRepository.save(qr);
   }
 }
