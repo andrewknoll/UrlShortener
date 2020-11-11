@@ -2,63 +2,59 @@ $(document).ready( function () {
 
     var safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyD2-m3JAvdEYiAzPLhF-uVN2ZUIW6MkXU4";
 
-    var originalUrl = $('#urlInput').val();
+
 
     $("#searchButton").click(function (event) {
 
-        alert("Clicked");
-        var googleCheckData = `
-                { 
-                    client: { 
-                        clientId : urlshortener-295117, 
-                        clientVersion : 1.5.2 
-                    },  
-                    threatInfo: { 
-                        threatTypes: [ 
-                            THREAT_TYPE_UNSPECIFIED, 	
-                            MALWARE, 
-                            THREAT_TYPE_UNSPECIFIED, 	
-                            MALWARE, 
-                            SOCIAL_ENGINEERING, 
-                            UNWANTED_SOFTWARE, 
-                            POTENTIALLY_HARMFUL_APPLICATION  
-                        ], 
-                        platformTypes: [ 
-                            ANY_PLATFORM 
-                        ], 
-                        threatEntryTypes: [ 
-                            URL 
-                        ], 
-                        threatEntries: [ 
-                            {
-                                url: ${originalUrl}
-                            },
-                        ]
-                    }
-                }`;
-                console.log("Ejecutando submit ...");
+        var originalUrl = $('#urlInput').val();
 
-                var json = JSON.stringify(googleCheckData);
-                console.log(`Se enviara ${json}`);
+        console.log(`Original url: ${originalUrl}`);
+                
+                payload = 
+                {
+                    "client": { 
+                       "clientId": "urlshortener-295117", 
+                       "clientVersion": "1.5.2" }, 
+                    "threatInfo": { 
+                       "threatTypes": ["THREAT_TYPE_UNSPECIFIED","MALWARE","SOCIAL_ENGINEERING","UNWANTED_SOFTWARE","POTENTIALLY_HARMFUL_APPLICATION"], 
+                       "platformTypes": ["ANY_PLATFORM"], 
+                       "threatEntryTypes": ["URL"], 
+                       "threatEntries": [ {"url": originalUrl } ] } 
+                };
+
+
+                 // Google safe browsing call
+                $.ajax({
+                    type: "POST",
+                    url: safeBrowsingUrl,
+                    data: JSON.stringify(payload),
+                    headers: {"Content-Type": "application/json"},
+                    dataType: 'json',
+                    beforeSend: function () {
+                        $("#safeBrowsingCheck").text("Checking URL against Google safe browsing ...");
+                    },
+                    success:function (output, status, xhr) {
+
+                        console.log(`Output: ${JSON.stringify(output)} and status ${status}`);
+
+
+                        $("#safeBrowsingCheck").text("This website is verified by google safe browsing ✅");
+                    },
+                    error: function (params) {
+                        alert("Error en peticion");
+                    }
+
+
+                }); 
 
     });
 
 
-    /* // Google safe browsing call
-                $.ajax({
-                    type: "POST",
-                    url: safeBrowsingUrl,
-                    data: JSON.stringify(googleCheckData),
-                    beforeSend: function () {
-                        $("#safeBrowsingCheck").text("Checking URL against Google safe browsing ...");
-                    },
-
-
-                });
+     
 
 
 
-
+/* 
                 event.preventDefault();
                 $.ajax({
                     type: "POST",
@@ -82,8 +78,8 @@ $(document).ready( function () {
                         $("#result").html(
                             "<div class='alert alert-danger lead'>ERROR</div>");
                     }
-                }); */
-    
+                }); 
+ */    
 
     
 });
