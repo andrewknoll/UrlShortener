@@ -27,8 +27,7 @@ public class UrlShortenerController {
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
-  public ResponseEntity<?> redirectTo(@PathVariable String id,
-                                      HttpServletRequest request) {
+  public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
       clickService.saveClick(id, extractIP(request));
@@ -40,17 +39,18 @@ public class UrlShortenerController {
 
   @RequestMapping(value = "/link", method = RequestMethod.POST)
   public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
-                                            @RequestParam(value = "sponsor", required = false)
-                                                String sponsor,
-                                            HttpServletRequest request) {
-    UrlValidator urlValidator = new UrlValidator(new String[] {"http",
-        "https"});
+      @RequestParam(value = "sponsor", required = false) String sponsor, HttpServletRequest request) {
+    UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
+    System.out.print("Received url " + url);
     if (urlValidator.isValid(url)) {
+      System.out.println(" - success");
+
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
       return new ResponseEntity<>(su, h, HttpStatus.CREATED);
     } else {
+      System.out.println(" - error");
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
   }
