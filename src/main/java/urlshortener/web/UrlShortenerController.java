@@ -28,13 +28,28 @@ public class UrlShortenerController {
     this.clickService = clickService;
   }
 
-  @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
+  @RequestMapping(value = "/{id:(?!link|index|sponsor).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id,
                                       HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
       clickService.saveClick(id, extractIP(request));
-      return createSuccessfulRedirectToResponse(l);
+      /*ResponseEntity<?> finalDest = createSuccessfulRedirectToResponse(l);
+      if (finalDest.getStatusCode() == HttpStatus.OK){
+        // URL exists and response status 200
+        HttpHeaders h = new HttpHeaders();
+        String sponsor = "localhost:8080/sponsor.html";
+        h.setLocation(URI.create(sponsor));
+        return new ResponseEntity<>(h, HttpStatus.OK);
+      }
+      else{
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+      }
+      return createSuccessfulRedirectToResponse(l);*/
+      HttpHeaders h = new HttpHeaders();
+      String sponsor = "http://localhost:8080/sponsor.html";
+      h.setLocation(URI.create(sponsor));
+      return new ResponseEntity<>(h, HttpStatus.OK);
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
@@ -85,5 +100,5 @@ public class UrlShortenerController {
       System.out.println("Error: " + e.getMessage());
       return false;
     }
-  }
+  } 
 }
