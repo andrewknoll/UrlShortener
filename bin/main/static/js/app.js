@@ -1,3 +1,29 @@
+<<<<<<< HEAD
+$(document).ready(
+    function () {
+        $("#shortener").submit(
+            function (event) {
+                event.preventDefault();
+                $.ajax({
+                    type: "POST",
+                    url: "/link",
+                    data: $(this).serialize(),
+                    success: function (msg) {
+                        $("#result").html(
+                            "<div class='alert alert-success lead'><a target='_blank' href='"
+                            + msg.uri
+                            + "'>"
+                            + msg.uri
+                            + "</a></div>");
+                    },
+                    error: function () {
+                        $("#result").html(
+                            "<div class='alert alert-danger lead'>ERROR</div>");
+                    }
+                });
+            });
+    });
+=======
 $(document).ready(function () {
 
     var safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyD2-m3JAvdEYiAzPLhF-uVN2ZUIW6MkXU4";
@@ -87,3 +113,4 @@ $(document).ready(function () {
     // event.preventDefault();
 
 });
+>>>>>>> 4dde2d1b43e3d03b02507cf1b337e9d80eef27cf

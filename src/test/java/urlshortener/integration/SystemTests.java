@@ -4,14 +4,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
-
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
+
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import net.glxn.qrgen.javase.QRCode;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @DirtiesContext
@@ -36,6 +41,13 @@ public class SystemTests {
 
   @LocalServerPort
   private int port;
+
+
+  public static byte[] toByteArray(QRCode qr) {
+    ByteArrayOutputStream oos = new ByteArrayOutputStream();
+    qr.writeTo(oos);
+    return oos.toByteArray();
+  }
 
   @Test
   public void testHome() {
@@ -69,6 +81,35 @@ public class SystemTests {
     assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/f684a3c4"));
     assertThat(rc.read("$.target"), is("http://example.com/"));
     assertThat(rc.read("$.sponsor"), is(nullValue()));
+  }
+
+
+  @Test
+  public void testGenerateQR() throws Exception {
+
+    ResponseEntity<String> entityLink = postLink("http://example.com/");
+
+    MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
+    parts.add("hash", JsonPath.parse(entityLink.getBody()).read("$.hash"));
+    parts.add("filename", "example.png");
+    ResponseEntity<byte[]> entityQR = restTemplate.postForEntity("/qr", parts, byte[].class);
+
+    assertThat(entityQR.getStatusCode(), is(HttpStatus.CREATED));
+    assertThat(entityQR.getHeaders().getLocation(),
+        is(new URI("http://localhost:" + this.port + "/file/example.png")));
+    assertThat(entityQR.getHeaders().getContentType(), is(new MediaType("application", "octet-stream"))); //is byte stream?
+
+    assertThat(entityQR.getHeaders().get("hash").size(), is(1));  //has only one hash?
+    assertThat(entityQR.getHeaders().get("hash").get(0), is("f684a3c4")); //hash is correct?
+
+    assertThat(entityQR.getHeaders().get("filename").size(), is(1)); // has only one filename?
+    assertThat(entityQR.getHeaders().get("fileName").get(0), is("example.png")); //filename is correct?
+    byte[] rc = entityQR.getBody();
+    
+
+    QRCode qr = QRCode.from(JsonPath.parse(entityLink.getBody()).read("$.uri").toString());
+    assertArrayEquals(toByteArray(qr), rc); //code is correct?
+    
   }
 
   @Test

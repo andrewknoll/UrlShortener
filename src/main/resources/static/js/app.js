@@ -2,6 +2,8 @@ $(document).ready(function () {
 
     var safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyD2-m3JAvdEYiAzPLhF-uVN2ZUIW6MkXU4";
 
+    var shortenedHash = null;
+
     $("#searchButton").click(function (event) {
 
         var originalUrl = $('#urlInput').val();
@@ -62,8 +64,10 @@ $(document).ready(function () {
                             "url": url
                         },
                         success: function (msg) {
+                            shortenedHash = msg.hash;
                             $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
                             $('#urlInput').val('');
+                            $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
                         },
                         error: function () {
                             $("#result").html("<div class='alert alert-danger lead'>ERROR</div>");
@@ -84,6 +88,50 @@ $(document).ready(function () {
 
     });
 
+    $("#qrButton").click(function (event) {
+        /*$.ajax({
+            type: "POST",
+            url: "/qr",
+            data: {
+                "hash": shortenedHash
+            },
+            success: function (msg) {
+                var binary = new Uint8Array(msg);
+                var blob = new Blob(binary, { 'type': 'image/png' });
+                /*var cosa = _arrayBufferToBase64(msg);
+                $("#result").html("<div class='alert alert-danger lead'>" + cosa + "</div>");
+                
+
+
+                $("#qrImage").attr('src', `${base64data}`);
+            },
+            error: function (msg) {
+                $("#result").html("<div class='alert alert-danger lead'>ERROR" + msg.status + "</div>");
+            }
+        });
+        */
+        var xhr = new XMLHttpRequest();
+       xhr.open('post',`${document.URL}/qr?hash=${shortenedHash}`)
+           xhr.onload = function(){
+               var img = new Image();
+               var response = xhr.responseText;
+               var binary = new Uint8Array(response.length);
+               
+               for(var i=0;i<response.length;i++){
+                   binary[i] = response.charCodeAt(i) & 0xff;
+               }
+               
+               img.src = URL.createObjectURL(new Blob([binary.buffer]));
+               document.body.appendChild(img)
+   
+           }
+           xhr.overrideMimeType('text/plain; charset=x-user-defined');
+           xhr.send();
+    });
+
+    function _arrayBufferToBase64( rawData ) {
+        return btoa(unescape(encodeURIComponent(rawData)));
+    }
     // event.preventDefault();
 
 });
