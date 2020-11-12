@@ -45,11 +45,12 @@ public class UrlShortenerController {
       else{
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
       }
-      return createSuccessfulRedirectToResponse(l);*/
+      return createSuccessfulRedirectToResponse(l);
       HttpHeaders h = new HttpHeaders();
       String sponsor = "http://localhost:8080/sponsor.html";
       h.setLocation(URI.create(sponsor));
-      return new ResponseEntity<>(h, HttpStatus.OK);
+      return new ResponseEntity<>(h, HttpStatus.OK);*/
+      return createSuccessfulRedirectToResponse(l);
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
