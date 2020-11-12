@@ -21,3 +21,5 @@ out/
 db/
 .vscode/
 bin/
+.project
+.classpath
