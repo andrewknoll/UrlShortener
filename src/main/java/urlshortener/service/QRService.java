@@ -9,6 +9,7 @@ import java.net.URI;
 import org.springframework.stereotype.Service;
 
 import net.glxn.qrgen.javase.QRCode;
+import net.glxn.qrgen.core.image.ImageType;
 import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.repository.QRRepository;
@@ -34,7 +35,7 @@ public class QRService {
   public QR save(ShortURL su, String fileName) {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     URI uri = linkTo(methodOn(UrlShortenerController.class).redirectTo(su.getHash(), null)).toUri();
-    QRCode.from(uri.toString()).writeTo(oos);
+    QRCode.from(uri.toString()).to(ImageType.PNG).writeTo(oos);
     QR qr = QRBuilder.newInstance()
         .hash(su.getHash())
         .fileName(fileName)

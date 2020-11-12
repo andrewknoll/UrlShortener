@@ -1,7 +1,10 @@
 -- Clean database
 
 DROP TABLE CLICK IF EXISTS;
+<<<<<<< HEAD
 DROP TABLE QRCODE IF EXISTS;
+=======
+>>>>>>> 4dde2d1b43e3d03b02507cf1b337e9d80eef27cf
 DROP TABLE SHORTURL IF EXISTS;
 
 -- ShortURL
@@ -19,6 +22,7 @@ CREATE TABLE SHORTURL
     COUNTRY VARCHAR(50)              -- Country
 );
 
+<<<<<<< HEAD
 -- QRCode
 
 CREATE TABLE QRCODE
@@ -28,6 +32,8 @@ CREATE TABLE QRCODE
     IMAGE     BLOB(5K) NOT NULL,                                                       -- QR code image
 );
 
+=======
+>>>>>>> 4dde2d1b43e3d03b02507cf1b337e9d80eef27cf
 -- Click
 
 CREATE TABLE CLICK

@@ -1,5 +1,6 @@
 package urlshortener.web;
 
+import org.springframework.http.MediaType;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -77,7 +78,7 @@ public class UrlShortenerController {
     }
   }
   
-  @RequestMapping(value = "/qr", method = RequestMethod.POST)
+  @RequestMapping(value = "/qr", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<byte[]> generateQRCode(@RequestParam("hash") String hash,
                                      @RequestParam(value = "filename", required = false) String fileName,
                                      HttpServletRequest request) {
