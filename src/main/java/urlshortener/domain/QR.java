@@ -1,6 +1,4 @@
 package urlshortener.domain;
-
-import java.io.File;
 import java.net.URI;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,10 +9,9 @@ public class QR {
 
   private String fileName;
   private URI uri;
-  @JsonProperty("code")
-  private File code;
+  private byte[] code;
 
-  public QR(String hash, String fileName, URI uri, File code) {
+  public QR(String hash, String fileName, URI uri, byte[] code) {
     this.hash = hash;
     this.fileName = fileName;
     this.uri = uri;
@@ -36,7 +33,7 @@ public class QR {
     return uri;
   }
 
-  public File getQR() {
+  public byte[] getQR() {
     return code;
   }
 };

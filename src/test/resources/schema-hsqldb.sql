@@ -23,9 +23,9 @@ CREATE TABLE SHORTURL
 
 CREATE TABLE QRCODE
 (
-    HASH      VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Foreing key
-    FILENAME  VARCHAR(100),                                                -- FileName (if provided)
-    IMAGE     BLOB(5K) NOT NULL,                                           -- QR code image
+    HASH      VARCHAR(10) PRIMARY KEY NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Foreign and primary key
+    FILENAME  VARCHAR(100),                                                            -- FileName (if provided)
+    IMAGE     BLOB(5K) NOT NULL,                                                       -- QR code image
 );
 
 -- Click

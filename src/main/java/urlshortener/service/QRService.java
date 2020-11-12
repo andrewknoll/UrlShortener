@@ -3,6 +3,10 @@ package urlshortener.service;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.net.URI;
+
 import org.springframework.stereotype.Service;
 
 import net.glxn.qrgen.javase.QRCode;
@@ -29,11 +33,14 @@ public class QRService {
   }
 
   public QR save(ShortURL su, String fileName) {
+    ByteArrayOutputStream oos = new ByteArrayOutputStream();
+    URI uri = linkTo(methodOn(UrlShortenerController.class).redirectTo(su.getHash(), null)).toUri();
+    QRCode.from(uri.toString()).writeTo(oos);
     QR qr = QRBuilder.newInstance()
         .hash(su.getHash())
         .fileName(fileName)
-        .uri((String h, String f) -> linkTo(methodOn(UrlShortenerController.class).getQRCode(h, f, null)).toUri())
-        .code(QRCode.from(su.getTarget()).file()).build();
+        .uri((String h, String f) -> linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyName(fileName, null)).toUri())
+        .code(oos.toByteArray()).build();
     return QRRepository.save(qr);
   }
 }

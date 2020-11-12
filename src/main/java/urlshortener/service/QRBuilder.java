@@ -11,7 +11,7 @@ public class QRBuilder {
   private String hash;
   private String fileName;
   private URI uri;
-  private File code;
+  private byte[] code;
 
   static QRBuilder newInstance() {
     return new QRBuilder();
@@ -37,7 +37,7 @@ public class QRBuilder {
     return this;
   }
 
-  QRBuilder code(File code) {
+  QRBuilder code(byte[] code) {
     this.code = code;
     return this;
   }

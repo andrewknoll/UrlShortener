@@ -1,5 +1,6 @@
 package urlshortener.repository.impl;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -27,7 +28,7 @@ public class QRRepositoryImpl implements QRRepository {
 
   private static final RowMapper<QR> rowMapper =
       (rs, rowNum) -> new QR(rs.getString("hash"), rs.getString("filename"),
-          null, rs.getObject("image", File.class));
+          null, rs.getBytes("image"));
 
   private final JdbcTemplate jdbc;
 
@@ -61,7 +62,7 @@ public class QRRepositoryImpl implements QRRepository {
     try {
       jdbc.update("INSERT INTO QRCODE VALUES (?,?,?)",
           new Object[] {qr.getHash(), qr.getFileName(), 
-              blobifyFile(qr.getQR()) },
+              blobify(qr.getQR()) },
           new int[] { Types.VARCHAR, Types.VARCHAR, Types.BLOB });
     } catch (DuplicateKeyException e) {
       log.debug("When insert for key {}", qr.getHash(), e);
@@ -114,10 +115,10 @@ public class QRRepositoryImpl implements QRRepository {
     }
   }
   
-  private SqlLobValue blobifyFile(File f) throws Exception{
-    final InputStream is = new FileInputStream(f);
+  private SqlLobValue blobify(byte[] f) throws Exception{
+    final InputStream is = new ByteArrayInputStream(f);
     LobHandler lobHandler = new DefaultLobHandler();
-    return new SqlLobValue(is, (int)f.length(), lobHandler);
+    return new SqlLobValue(is, (int)f.length, lobHandler);
   }
 
 }

@@ -45,17 +45,50 @@ public class UrlShortenerController {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
   }
+
+  @RequestMapping(value = "/qr/{hash:(?!link|index).*}", method = RequestMethod.GET)
+  public ResponseEntity<byte[]> retrieveQRCodebyHash(@PathVariable String hash,
+      HttpServletRequest request) {
+    QR q = qrService.findByHash(hash);
+    ShortURL su = shortUrlService.findByKey(hash);
+    if (q != null && su != null) {
+      clickService.saveClick(hash, extractIP(request));
+      HttpHeaders h = new HttpHeaders();
+      h.setLocation(URI.create(su.getTarget()));
+    return new ResponseEntity<>(q.getQR(), h, HttpStatus.ACCEPTED);
+    } else {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+  }
+
+  @RequestMapping(value = "/file/{filename:(?!link|index).*}", method = RequestMethod.GET)
+  public ResponseEntity<byte[]> retrieveQRCodebyName(@PathVariable String filename,
+      HttpServletRequest request) {
+    QR q = qrService.findByName(filename);
+    ShortURL su = null;
+    if (q != null) su = shortUrlService.findByKey(q.getHash());
+    if (q != null && su != null) {
+      clickService.saveClick(q.getHash(), extractIP(request));
+      HttpHeaders h = new HttpHeaders();
+      h.setLocation(URI.create(su.getTarget()));
+    return new ResponseEntity<>(q.getQR(), h, HttpStatus.ACCEPTED);
+    } else {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+  }
   
   @RequestMapping(value = "/qr", method = RequestMethod.POST)
-  public ResponseEntity<QR> getQRCode(@RequestParam("hash") String hash,
-                                     @RequestParam(value = "fileName", required = false) String fileName,
+  public ResponseEntity<byte[]> generateQRCode(@RequestParam("hash") String hash,
+                                     @RequestParam(value = "filename", required = false) String fileName,
                                      HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(hash);
     if (l != null) {
       QR qr = qrService.save(l, fileName);
       HttpHeaders h = new HttpHeaders();
       h.setLocation(qr.getUri());
-      return new ResponseEntity<>(qr, h, HttpStatus.CREATED);
+      h.add("hash", qr.getHash());
+      h.add("filename", qr.getFileName());
+      return new ResponseEntity<>(qr.getQR(), h, HttpStatus.CREATED);
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
