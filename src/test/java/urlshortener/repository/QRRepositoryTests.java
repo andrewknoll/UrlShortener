@@ -11,14 +11,10 @@ import static urlshortener.fixtures.QRFixture.qr1;
 import static urlshortener.fixtures.QRFixture.qr1modified;
 import static urlshortener.fixtures.QRFixture.qr2;
 import static urlshortener.fixtures.QRFixture.qr3;
-import static urlshortener.fixtures.ShortURLFixture.badUrl;
 import static urlshortener.fixtures.ShortURLFixture.url1;
-import static urlshortener.fixtures.ShortURLFixture.url1modified;
 import static urlshortener.fixtures.ShortURLFixture.url2;
 import static urlshortener.fixtures.ShortURLFixture.url3;
 
-import java.io.File;
-import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

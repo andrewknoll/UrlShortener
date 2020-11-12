@@ -1,8 +1,6 @@
 package urlshortener.domain;
 import java.net.URI;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class QR {
 
   private String hash;

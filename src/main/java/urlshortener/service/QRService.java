@@ -4,7 +4,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.net.URI;
 
 import org.springframework.stereotype.Service;
