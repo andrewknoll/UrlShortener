@@ -15,7 +15,7 @@ import java.io.File;
 import java.io.ObjectInputStream;
 import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Blob;
 
 import org.apache.commons.io.FileUtils;
@@ -101,7 +101,7 @@ public class SystemTests {
     //assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/example.png"));
     //assertThat(rc.read("$.fileName"), is("example.png"));
     QRCode qr = QRCode.from(JsonPath.parse(entityLink.getBody()).read("$.uri").toString());
-    assert (!Files.isSameFile(Path.of(rc.getQR().getPath()), Path.of(qr.file().getPath())));
+    assert (!Files.isSameFile(Paths.get(rc.getQR().getPath()), Paths.get(qr.file().getPath())));
   }
 
   @Test
