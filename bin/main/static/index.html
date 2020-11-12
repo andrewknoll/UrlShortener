@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>URL Shortener</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link href="webjars/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://www.googleapis.com/auth/script.external_request">
+    <script src="webjars/jquery/2.1.4/jquery.min.js" type="text/javascript"></script>
+    <script src="webjars/bootstrap/3.3.5/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="js/app.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <div class="container-full">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <img src="images/cover.png" width="500" height="230">
+                <br>
+                <div class="input-group input-group-lg col-sm-offset-4 col-sm-4">
+                    <input id="urlInput" class="center-block form-control input-lg" name="url" placeholder="Enter a URL"
+                        title="Enter a URL" type="text">
+                    <span class="input-group-btn">
+                        <button id="searchButton" class="btn btn-lg btn-primary">Shortme!</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <span>
+                    <p id="safeBrowsingCheck" style="color: rgb(62,63,69);"></p>
+                    <p id="notifyShortening" style="color: rgb(25, 194, 115);"></p>
+                </span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="col-sm-offset-4 col-sm-4 text-center">
+                    <br />
+                    <div id="result" />
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+</body>
+
+</html>
