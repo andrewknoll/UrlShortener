@@ -14,7 +14,12 @@ repositories {
     mavenCentral()
 }
 
+
+
 dependencies {
+    compile group: 'org.glassfish', name: 'javax.json', version: '1.1.4'
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+    
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
     implementation 'org.springframework.boot:spring-boot-starter-web'
