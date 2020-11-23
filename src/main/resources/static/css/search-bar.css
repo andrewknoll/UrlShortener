@@ -10,7 +10,7 @@ body {
 
 body {
     margin: 0;
-    background-color: #ffd8d8;
+    background-color: #d1d1d1ba;
 }
 
 .tb {
@@ -38,12 +38,13 @@ button {
     top: 50%;
     left: 0;
     right: 0;
-    width: 550px;
-    padding: 35px;
+    width: 50%;
+    height: 90px;
+    /*padding: 35px;*/
     margin: -83px auto 0 auto;
-    background-color: #ff7575;
+    background-color: #f1ad5f;
     border-radius: 20px;
-    box-shadow: 0 10px 40px #ff7c7c, 0 0 0 20px #ffffffeb;
+    box-shadow: 0 10px 40px #ee8229, 0 0 0 20px #ffffffeb;
     transform: scale(0.6);
 }
 
@@ -52,14 +53,17 @@ form {
 }
 
 input[type="text"] {
+    padding-left: 1cm;
     width: 100%;
+    padding-bottom: 10px;
     height: 96px;
-    font-size: 60px;
-    line-height: 1;
+    font-size: 50px;
+    font-family: Arial, Helvetica, sans-serif;
+    /*line-height: 1;*/
 }
 
 input[type="text"]::placeholder {
-    color: #e16868;
+    color: #ffffff;
 }
 
 #s-cover {
@@ -77,10 +81,11 @@ button {
 
 #s-circle {
     position: relative;
-    top: -8px;
+    top: -20px;
+    /*right: -20px;*/
     left: 0;
-    width: 43px;
-    height: 43px;
+    width: 50px;
+    height: 50px;
     margin-top: 0;
     border-width: 15px;
     border: 15px solid #fff;
@@ -159,10 +164,55 @@ button span:after {
     margin: 20px;
     color: #fff;
     font-family: Nunito;
-    font-size: 14px;
+    font-size: 5px;
     text-decoration: none;
-    background-color: #ff7575;
+    background-color: #ffffff;
     border-radius: 4px;
     box-shadow: 0 10px 20px -5px rgba(255, 117, 117, 0.86);
     z-index: 125;
+}
+
+.btn-upload {
+    padding-left: 5px;
+    position: relative;
+    top: 5px;
+    font-family: Arial;
+    font-size: 25px;
+    height: 70%;
+    width: 15%;
+    border-color: #ff3f3f;
+    color: white;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+    background-color: #ff8b07;
+    border-color: #000000;
+}
+
+.btn-container {
+    border-radius: 5px;
+    padding-bottom: 5px;
+}
+
+
+label {
+    vertical-align: top;
+}
+
+
+.csvInput {
+    font-size: 24px;
+    padding-left: 5px;
+    color: white;
+    font-family: Arial;
+    top: 50%;
+    left: 50%;
+
+}
+
+.custom-csv-upload {
+    margin-top: 10px;
+    display: inline-block;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
 }
