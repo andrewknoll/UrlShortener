@@ -17,49 +17,21 @@ $(document).ready(function() {
 
         $.ajax({
             type: "POST",
-            url: "/safeBrowsing",
+            url: "/link",
             data: {
                 "url": introducedUrl
             },
-            success: function(msg) {
-                console.log("Success");
+            success: function(shortUrl, status, response) {
                 $("#safeBrowsingCheck").text("This website is verified by google safe browsing ✅");
-                $("#notifyShortening").text("Shortening url ... ⏳");
-
-                sendLinkRequest(introducedUrl)
+                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + shortUrl + "'>" + shortUrl + "</a></div>");
+                $("#notifyShortening").text("");
+                $('#urlInput').val('');
             },
-            error: function(output, status, xhr) {
-
-                if (output.status == 404) {
-                    $("#safeBrowsingCheck").text("Sorry, Google Safe Browsing couldn't be reached 😔");
-                } else if (output.status == 400) {
-                    $("#safeBrowsingCheck").text("Bad request, please check inserted url 🤨");
-                } else {
-                    var urlAndType = output.responseText.split(";");
-
-
-                    if (confirm(`Warning! The introduced url is marked by Google Safe browsing as a ${
-                        urlAndType[1]
-                    } website, are you sure you want to continue? ❌`)) {
-                        console.log('Thing was saved to the database.');
-                        sendLinkRequest(introducedUrl)
-
-                    }
-
-                    $('#urlInput').val('');
-
-                }
-
-                console.log(`Error en peticion responsetext ${
-                    output.responseText
-                } and statuscode ${
-                    output.status
-                }`);
-
+            error: function(output) { // output.status para statuscode
+                $("#result").html("<div class='alert alert-danger lead'> ERROR: " + JSON.parse(output.responseText).error + "</div>");
+                $('#urlInput').val('');
             }
         });
-
-
     });
 
 
@@ -136,24 +108,6 @@ $(document).ready(function() {
 
 });
 
-function sendLinkRequest(introducedUrl) {
-    $.ajax({
-        type: "POST",
-        url: "/link",
-        data: {
-            "url": introducedUrl
-        },
-        success: function(msg) {
-            $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
-            $("#notifyShortening").text("");
-            $('#urlInput').val('');
-        },
-        error: function() {
-            $("#result").html("<div class='alert alert-danger lead'>ERROR</div>");
-        }
-    });
-}
-
 
 function sendMultipleUrls() {
 
@@ -168,14 +122,19 @@ function sendMultipleUrls() {
         processData: false,
         enctype: 'multipart/form-data',
         contentType: false,
-        success: function(msg) {
+        success: function(csvContent, status, response) {
+
+            console.log(`Received headers ${
+                response.getResponseHeader('Location')
+            } , status ${
+                response.status
+            } and content: \n ${csvContent}`);
+
             $("#safeBrowsingCheck").text("Thess websites are verified by google safe browsing ✅");
             $("#notifyShortening").text("Shortening urls ... ⏳");
             $("#notifyShortening").text("Success shortening");
-            msg.forEach(shortUrl => {
-                console.log(`Reply url: ${shortUrl}`)
-            });
-            var csvContent;
+
+            /* var csvContent;
             if ($("#urlsNum").val() == "") {
                 csvContent = "data:text/csv;charset=utf-8," + msg.map(shortUrl => shortUrl).join("\n");
             } else {
@@ -183,7 +142,7 @@ function sendMultipleUrls() {
                 for (let i = 0; i < $("#urlsNum").val(); i++) {
                     csvContent = csvContent + msg[i] + "\r\n";
                 }
-            }
+            } */
             var encodedUri = encodeURI(csvContent);
             var link = document.createElement("a");
             link.setAttribute("href", encodedUri);

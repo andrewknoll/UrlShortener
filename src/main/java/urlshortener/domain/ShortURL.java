@@ -16,9 +16,8 @@ public class ShortURL {
   private String ip;
   private String country;
 
-  public ShortURL(String hash, String target, URI uri, String sponsor,
-                  Date created, String owner, Integer mode, Boolean safe, String ip,
-                  String country) {
+  public ShortURL(String hash, String target, URI uri, String sponsor, Date created, String owner, Integer mode,
+      Boolean safe, String ip, String country) {
     this.hash = hash;
     this.target = target;
     this.uri = uri;

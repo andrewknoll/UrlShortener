@@ -17,21 +17,49 @@ $(document).ready(function() {
 
         $.ajax({
             type: "POST",
-            url: "/link",
+            url: "/safeBrowsing",
             data: {
                 "url": introducedUrl
             },
-            success: function(shortUrl, status, response) {
+            success: function(msg) {
+                console.log("Success");
                 $("#safeBrowsingCheck").text("This website is verified by google safe browsing ✅");
-                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + shortUrl + "'>" + shortUrl + "</a></div>");
-                $("#notifyShortening").text("");
-                $('#urlInput').val('');
+                $("#notifyShortening").text("Shortening url ... ⏳");
+
+                sendLinkRequest(introducedUrl)
             },
-            error: function(output) { // output.status para statuscode
-                $("#result").html("<div class='alert alert-danger lead'> ERROR: " + JSON.parse(output.responseText).error + "</div>");
-                $('#urlInput').val('');
+            error: function(output, status, xhr) {
+
+                if (output.status == 404) {
+                    $("#safeBrowsingCheck").text("Sorry, Google Safe Browsing couldn't be reached 😔");
+                } else if (output.status == 400) {
+                    $("#safeBrowsingCheck").text("Bad request, please check inserted url 🤨");
+                } else {
+                    var urlAndType = output.responseText.split(";");
+
+
+                    if (confirm(`Warning! The introduced url is marked by Google Safe browsing as a ${
+                        urlAndType[1]
+                    } website, are you sure you want to continue? ❌`)) {
+                        console.log('Thing was saved to the database.');
+                        sendLinkRequest(introducedUrl)
+
+                    }
+
+                    $('#urlInput').val('');
+
+                }
+
+                console.log(`Error en peticion responsetext ${
+                    output.responseText
+                } and statuscode ${
+                    output.status
+                }`);
+
             }
         });
+
+
     });
 
 
@@ -107,6 +135,24 @@ $(document).ready(function() {
     });
 
 });
+
+function sendLinkRequest(introducedUrl) {
+    $.ajax({
+        type: "POST",
+        url: "/link",
+        data: {
+            "url": introducedUrl
+        },
+        success: function(msg) {
+            $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
+            $("#notifyShortening").text("");
+            $('#urlInput').val('');
+        },
+        error: function() {
+            $("#result").html("<div class='alert alert-danger lead'>ERROR</div>");
+        }
+    });
+}
 
 
 function sendMultipleUrls() {
