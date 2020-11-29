@@ -19,3 +19,9 @@ out/
 # Other
 
 db/
+.vscode/
+bin/
+.project
+.classpath
+.settings/
+.DS_Store
