@@ -111,7 +111,7 @@ $(document).ready(function () {
         });
         */
         var xhr = new XMLHttpRequest();
-       xhr.open('post',`${document.URL}/qr?hash=${shortenedHash}`)
+        xhr.open('get',`${document.URL}/qr/${shortenedHash}`)
            xhr.onload = function(){
                var img = new Image();
                var response = xhr.responseText;

@@ -21,6 +21,8 @@ import urlshortener.service.ClickService;
 import urlshortener.service.QRService;
 import urlshortener.service.ShortURLService;
 
+import java.util.HashMap;
+
 @RestController
 public class UrlShortenerController {
   private final ShortURLService shortUrlService;
@@ -28,6 +30,8 @@ public class UrlShortenerController {
   private final ClickService clickService;
 
   private final QRService qrService;
+
+  private final String defaultFormat = "png";
 
   public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService) {
     this.shortUrlService = shortUrlService;
@@ -43,72 +47,70 @@ public class UrlShortenerController {
       clickService.saveClick(id, extractIP(request));
       return createSuccessfulRedirectToResponse(l);
     } else {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-  }
-
-  @RequestMapping(value = "/qr/{hash:(?!link|index).*}", method = RequestMethod.GET)
-  public ResponseEntity<byte[]> retrieveQRCodebyHash(@PathVariable String hash,
-      HttpServletRequest request) {
-    QR q = qrService.findByHash(hash);
-    ShortURL su = shortUrlService.findByKey(hash);
-    if (q != null && su != null) {
-      clickService.saveClick(hash, extractIP(request));
-      HttpHeaders h = new HttpHeaders();
-      h.setLocation(URI.create(su.getTarget()));
-    return new ResponseEntity<>(q.getQR(), h, HttpStatus.ACCEPTED);
-    } else {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-  }
-
-  @RequestMapping(value = "/file/{filename:(?!link|index).*}", method = RequestMethod.GET)
-  public ResponseEntity<byte[]> retrieveQRCodebyName(@PathVariable String filename,
-      HttpServletRequest request) {
-    QR q = qrService.findByName(filename);
-    ShortURL su = null;
-    if (q != null) su = shortUrlService.findByKey(q.getHash());
-    if (q != null && su != null) {
-      clickService.saveClick(q.getHash(), extractIP(request));
-      HttpHeaders h = new HttpHeaders();
-      h.setLocation(URI.create(su.getTarget()));
-    return new ResponseEntity<>(q.getQR(), h, HttpStatus.ACCEPTED);
-    } else {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+      return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
     }
   }
   
+  @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET)
+  public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
+      @PathVariable(required = false) String format,
+      HttpServletRequest request) {
+    if (defaultFormat.equals(format) || format == null) {
+      QR q = qrService.findByHash(hash); //Try to find if QR was already generated
+      ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
+      if (su != null) {
+        clickService.saveClick(hash, extractIP(request));
+        if (q == null) { //if QR was never generated
+          q = qrService.save(su); //Generate QR
+        }
+        HttpHeaders h = new HttpHeaders();
+        h.add("hash", hash);
+        h.setLocation(q.getUri());
+        return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
+      }
+    }
+    return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
+    
+  }
+
+  /*
   @RequestMapping(value = "/qr", method = RequestMethod.POST, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<byte[]> generateQRCode(@RequestParam("hash") String hash,
-                                     @RequestParam(value = "filename", required = false) String fileName,
+                                     @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR,
                                      HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(hash);
     if (l != null) {
-      QR qr = qrService.save(l, fileName);
+      if (generateQR) {
+        QR qr = qrService.save(l);
+      }
       HttpHeaders h = new HttpHeaders();
       h.setLocation(qr.getUri());
       h.add("hash", qr.getHash());
-      h.add("filename", qr.getFileName());
       return new ResponseEntity<>(qr.getQR(), h, HttpStatus.CREATED);
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
   }
-
-  @RequestMapping(value = "/link", method = RequestMethod.POST)
-  public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
+*/
+  @RequestMapping(value = "/link", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> shortener(@RequestParam("url") String url,
                                             @RequestParam(value = "sponsor", required = false)
                                                 String sponsor,
+                                            @RequestParam(value = "generateQR", defaultValue = "false")
+                                                boolean generateQR,
                                                 HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
         "https"});
     if (urlValidator.isValid(url) && this.reachableURL(url)) {
-      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
+      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
+      if (generateQR) {
+        qrService.save(su);
+      }
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
       return new ResponseEntity<>(su, h, HttpStatus.CREATED);
     } else {
-      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+      return error("Provided URL is not valid or is unreachable", HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -127,18 +129,23 @@ public class UrlShortenerController {
    * @param inputURL URL to being shortened
    * @return True, if and only if, inputURL is reachable.
    */
-  private boolean reachableURL(String inputURL){
+  private boolean reachableURL(String inputURL) {
     HttpURLConnection httpURLConn;
-    try{
+    try {
       httpURLConn = (HttpURLConnection) new URL(inputURL).openConnection();
       // HEAD request is like GET request but just expecting headers, not resources
       httpURLConn.setRequestMethod("HEAD");
       // System.out.println("Status request: " + httpURLConn.getResponseCode())
       return httpURLConn.getResponseCode() == HttpURLConnection.HTTP_OK;
-    }
-    catch(Exception e){
+    } catch (Exception e) {
       System.out.println("Error: " + e.getMessage());
       return false;
     }
+  }
+  
+  private ResponseEntity<?> error(String message, HttpStatus status) {
+    HashMap<String, String> map = new HashMap<>();
+    map.put("error", message);
+    return new ResponseEntity<>(map, status);
   }
 }

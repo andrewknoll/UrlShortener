@@ -25,23 +25,13 @@ public class QRRepositoryImpl implements QRRepository {
       .getLogger(QRRepositoryImpl.class);
 
   private static final RowMapper<QR> rowMapper =
-      (rs, rowNum) -> new QR(rs.getString("hash"), rs.getString("filename"),
+      (rs, rowNum) -> new QR(rs.getString("hash"),
           null, rs.getBytes("image"));
 
   private final JdbcTemplate jdbc;
 
   public QRRepositoryImpl(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
-  }
-
-  @Override
-  public QR findByName(String id) {
-    try {
-      return jdbc.queryForObject("SELECT * FROM QRCODE WHERE filename=?", rowMapper, id);
-    } catch (Exception e) {
-      log.debug("When select for key {}", id, e);
-      return null;
-    }
   }
   
   @Override
@@ -58,10 +48,10 @@ public class QRRepositoryImpl implements QRRepository {
   @Override
   public QR save(QR qr) {
     try {
-      jdbc.update("INSERT INTO QRCODE VALUES (?,?,?)",
-          new Object[] {qr.getHash(), qr.getFileName(), 
+      jdbc.update("INSERT INTO QRCODE VALUES (?,?)",
+          new Object[] {qr.getHash(), 
               blobify(qr.getQR()) },
-          new int[] { Types.VARCHAR, Types.VARCHAR, Types.BLOB });
+          new int[] { Types.VARCHAR, Types.BLOB });
     } catch (DuplicateKeyException e) {
       log.debug("When insert for key {}", qr.getHash(), e);
       return qr;
@@ -76,8 +66,8 @@ public class QRRepositoryImpl implements QRRepository {
   public void update(QR su) {
     try {
       jdbc.update(
-          "update QRCODE set filename=? image=? where hash=?",
-          su.getFileName(), su.getQR(), su.getHash());
+          "update QRCODE set image=? where hash=?",
+          su.getQR(), su.getHash());
     } catch (Exception e) {
       log.debug("When update for hash {}", su.getHash(), e);
     }

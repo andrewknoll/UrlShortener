@@ -22,7 +22,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
           null, rs.getString("sponsor"), rs.getDate("created"),
           rs.getString("owner"), rs.getInt("mode"),
           rs.getBoolean("safe"), rs.getString("ip"),
-          rs.getString("country"));
+          rs.getString("country"), null);
 
   private final JdbcTemplate jdbc;
 
@@ -66,7 +66,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
       return new ShortURL(
         su.getHash(), su.getTarget(), su.getUri(), su.getSponsor(),
         su.getCreated(), su.getOwner(), su.getMode(), safeness,
-        su.getIP(), su.getCountry()
+        su.getIP(), su.getCountry(), su.getQrUrl()
       );
     } catch (Exception e) {
       log.debug("When update", e);

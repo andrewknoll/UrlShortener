@@ -58,15 +58,6 @@ public class QRRepositoryTests {
   }
 
   @Test
-  public void thatSaveFilename() {
-    shortURLrep.save(url2());
-    assertNotNull(repository.save(qr2()));
-    assertSame(
-        jdbc.queryForObject("select filename from QRCode", String.class),
-        "file2.png");
-  }
-
-  @Test
   public void thatSaveADuplicateHashIsSafelyIgnored() {
     shortURLrep.save(url1());
     repository.save(qr1());
@@ -92,28 +83,10 @@ public class QRRepositoryTests {
   }
 
   @Test
-  public void thatFindByNameReturnsAQR() {
-    shortURLrep.save(url1());
-    shortURLrep.save(url2());
-    repository.save(qr1());
-    repository.save(qr2());
-    QR qr = repository.findByName(qr1().getFileName());
-    assertNotNull(qr);
-    assertSame(qr.getHash(), qr1().getHash());
-  }
-
-  @Test
   public void thatFindByHashReturnsNullWhenFails() {
     shortURLrep.save(url1());
     repository.save(qr1());
     assertNull(repository.findByHash(qr2().getHash()));
-  }
-
-  @Test
-  public void thatFindByNameReturnsNullWhenFails() {
-    shortURLrep.save(url1());
-    repository.save(qr1());
-    assertNull(repository.findByName(qr2().getFileName()));
   }
 
   @Test

@@ -73,6 +73,23 @@ public class SystemTests {
     ResponseEntity<String> entity = postLink("http://example.com/");
 
     assertThat(entity.getStatusCode(), is(HttpStatus.CREATED));
+    assertThat(entity.getHeaders().getLocation(), is(new URI("http://localhost:" + this.port + "/f684a3c4")));
+    assertThat(entity.getHeaders().getContentType(), is(new MediaType("application", "json")));
+    ReadContext rc = JsonPath.parse(entity.getBody());
+    assertThat(rc.read("$.hash"), is("f684a3c4"));
+    assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/f684a3c4"));
+    assertThat(rc.read("$.target"), is("http://example.com/"));
+    assertThat(rc.read("$.sponsor"), is(nullValue()));
+  }
+  
+  @Test
+  public void testCreateLinkWithQR() throws Exception {
+    MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
+    parts.add("url", "http://example.com/");
+    parts.add("generateQR", "true");
+    ResponseEntity<String> entity = restTemplate.postForEntity("/link", parts, String.class);
+
+    assertThat(entity.getStatusCode(), is(HttpStatus.CREATED));
     assertThat(entity.getHeaders().getLocation(),
         is(new URI("http://localhost:" + this.port + "/f684a3c4")));
     assertThat(entity.getHeaders().getContentType(), is(new MediaType("application", "json")));
@@ -81,29 +98,26 @@ public class SystemTests {
     assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/f684a3c4"));
     assertThat(rc.read("$.target"), is("http://example.com/"));
     assertThat(rc.read("$.sponsor"), is(nullValue()));
+    assertThat(rc.read("$.qrUrl"), is("http://localhost:" + this.port + "/qr/f684a3c4"));
   }
 
 
   @Test
-  public void testGenerateQR() throws Exception {
+  public void testQR() throws Exception {
 
     ResponseEntity<String> entityLink = postLink("http://example.com/");
 
-    MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
-    parts.add("hash", JsonPath.parse(entityLink.getBody()).read("$.hash"));
-    parts.add("filename", "example.png");
-    ResponseEntity<byte[]> entityQR = restTemplate.postForEntity("/qr", parts, byte[].class);
+    String hash = JsonPath.parse(entityLink.getBody()).read("$.hash");
+    ResponseEntity<byte[]> entityQR = restTemplate.getForEntity("/qr/" + hash, byte[].class);
 
-    assertThat(entityQR.getStatusCode(), is(HttpStatus.CREATED));
+    assertThat(entityQR.getStatusCode(), is(HttpStatus.ACCEPTED));
     assertThat(entityQR.getHeaders().getLocation(),
-        is(new URI("http://localhost:" + this.port + "/file/example.png")));
+        is(new URI("http://localhost:" + this.port + "/qr/f684a3c4")));
     assertThat(entityQR.getHeaders().getContentType(), is(new MediaType("application", "octet-stream"))); //is byte stream?
 
     assertThat(entityQR.getHeaders().get("hash").size(), is(1));  //has only one hash?
     assertThat(entityQR.getHeaders().get("hash").get(0), is("f684a3c4")); //hash is correct?
 
-    assertThat(entityQR.getHeaders().get("filename").size(), is(1)); // has only one filename?
-    assertThat(entityQR.getHeaders().get("fileName").get(0), is("example.png")); //filename is correct?
     byte[] rc = entityQR.getBody();
     
 

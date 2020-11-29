@@ -6,8 +6,6 @@ import urlshortener.domain.QR;
 
 public interface QRRepository {
 
-  QR findByName(String id);
-
   QR findByHash(String hash);
 
   QR save(QR qr);

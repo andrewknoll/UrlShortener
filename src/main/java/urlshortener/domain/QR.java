@@ -5,13 +5,11 @@ public class QR {
 
   private String hash;
 
-  private String fileName;
   private URI uri;
   private byte[] code;
 
-  public QR(String hash, String fileName, URI uri, byte[] code) {
+  public QR(String hash, URI uri, byte[] code) {
     this.hash = hash;
-    this.fileName = fileName;
     this.uri = uri;
     this.code = code;
   }
@@ -21,10 +19,6 @@ public class QR {
 
   public String getHash() {
     return hash;
-  }
-
-  public String getFileName() {
-    return fileName;
   }
 
   public URI getUri() {

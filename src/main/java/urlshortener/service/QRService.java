@@ -8,8 +8,8 @@ import java.net.URI;
 
 import org.springframework.stereotype.Service;
 
-import net.glxn.qrgen.javase.QRCode;
 import net.glxn.qrgen.core.image.ImageType;
+import net.glxn.qrgen.javase.QRCode;
 import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.repository.QRRepository;
@@ -24,22 +24,17 @@ public class QRService {
     this.QRRepository = QRRepository;
   }
 
-  public QR findByName(String id) {
-    return QRRepository.findByName(id);
-  }
-
   public QR findByHash(String id) {
     return QRRepository.findByHash(id);
   }
 
-  public QR save(ShortURL su, String fileName) {
+  public QR save(ShortURL su) {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     URI uri = linkTo(methodOn(UrlShortenerController.class).redirectTo(su.getHash(), null)).toUri();
     QRCode.from(uri.toString()).to(ImageType.PNG).writeTo(oos);
     QR qr = QRBuilder.newInstance()
         .hash(su.getHash())
-        .fileName(fileName)
-        .uri((String h, String f) -> linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyName(fileName, null)).toUri())
+        .uri((String h) -> linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyHash(h, null, null)).toUri())
         .code(oos.toByteArray()).build();
     return QRRepository.save(qr);
   }
