@@ -23,7 +23,7 @@ public class ShortURLBuilder {
   private Boolean safe;
   private String ip;
   private String country;
-  private String qrUrl;
+  private URI qrUri;
 
   static ShortURLBuilder newInstance() {
     return new ShortURLBuilder();
@@ -41,7 +41,7 @@ public class ShortURLBuilder {
         safe,
         ip,
         country,
-        qrUrl
+        qrUri
     );
   }
 
@@ -92,12 +92,12 @@ public class ShortURLBuilder {
     return this;
   }
 
-  ShortURLBuilder qrGenerated(boolean wasGenerated) {
+  ShortURLBuilder qrGenerated(Function<String, URI> extractor, boolean wasGenerated) {
     if (wasGenerated) {
-      this.qrUrl = uri + "/qr/" + hash;
+      this.qrUri = extractor.apply(hash);
     }
     else {
-      this.qrUrl = null;
+      this.qrUri = null;
     }
     return this;
   }

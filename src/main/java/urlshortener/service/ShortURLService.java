@@ -34,7 +34,8 @@ public class ShortURLService {
         .treatAsSafe()
         .ip(ip)
         .unknownCountry()
-        .qrGenerated(qrWasGenerated)
+        .qrGenerated((String hash) -> linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyHash(hash, null, null))
+            .toUri(), qrWasGenerated)
         .build();
     return shortURLRepository.save(su);
   }

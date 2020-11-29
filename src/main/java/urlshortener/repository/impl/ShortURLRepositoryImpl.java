@@ -66,7 +66,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
       return new ShortURL(
         su.getHash(), su.getTarget(), su.getUri(), su.getSponsor(),
         su.getCreated(), su.getOwner(), su.getMode(), safeness,
-        su.getIP(), su.getCountry(), su.getQrUrl()
+        su.getIP(), su.getCountry(), su.getqrUri()
       );
     } catch (Exception e) {
       log.debug("When update", e);
