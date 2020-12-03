@@ -2,7 +2,6 @@ package urlshortener.service;
 
 import static com.google.common.hash.Hashing.murmur3_32;
 
-
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -23,29 +22,19 @@ public class ShortURLBuilder {
   private Boolean safe;
   private String ip;
   private String country;
+  private String desc;
 
   static ShortURLBuilder newInstance() {
     return new ShortURLBuilder();
   }
 
   ShortURL build() {
-    return new ShortURL(
-        hash,
-        target,
-        uri,
-        sponsor,
-        created,
-        owner,
-        mode,
-        safe,
-        ip,
-        country
-    );
+    return new ShortURL(hash, target, uri, sponsor, created, owner, mode, safe, ip, country, desc);
   }
 
   ShortURLBuilder target(String url) {
     target = url;
-    //noinspection UnstableApiUsage
+    // noinspection UnstableApiUsage
     hash = murmur3_32().hashString(url, StandardCharsets.UTF_8).toString();
     return this;
   }
@@ -75,6 +64,11 @@ public class ShortURLBuilder {
     return this;
   }
 
+  ShortURLBuilder treatAsUnsafe() {
+    this.safe = false;
+    return this;
+  }
+
   ShortURLBuilder ip(String ip) {
     this.ip = ip;
     return this;
@@ -87,6 +81,11 @@ public class ShortURLBuilder {
 
   ShortURLBuilder uri(Function<String, URI> extractor) {
     this.uri = extractor.apply(hash);
+    return this;
+  }
+
+  ShortURLBuilder description(String desc) {
+    this.desc = desc;
     return this;
   }
 }

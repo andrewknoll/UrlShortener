@@ -59,28 +59,18 @@ public class UrlShortenerController {
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
-    try {
-      if (l != null) {
-        List<String> safeBrowsingResult = safeBrowsingChecker(l.getUri().toString());
-
-        // If not safe return bad request
-        if (safeBrowsingResult.get(0).equals("SAFE")) {
-          clickService.saveClick(id, extractIP(request));
-          return createSuccessfulRedirectToResponse(l);
-        } else {
-          String json = Json.createObjectBuilder().add("error", safeBrowsingResult.get(1)).build().toString();
-          return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
-        }
+    if (l != null) {
+      // If not safe return bad request
+      if (l.getSafe()) {
+        clickService.saveClick(id, extractIP(request));
+        return createSuccessfulRedirectToResponse(l);
       } else {
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
+        return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
       }
-
-    } catch (Exception e) {
-      String json = Json.createObjectBuilder().add("error", "Exception checking URL against Google Safe Browsing")
-          .build().toString();
-      return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
+    } else {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
-
   }
 
   @RequestMapping(value = "/link", method = RequestMethod.POST)
@@ -89,21 +79,30 @@ public class UrlShortenerController {
       throws ClientProtocolException, IOException {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
 
-    newThread.start();
     if (urlValidator.isValid(url)) {
+      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
+      HttpHeaders h = new HttpHeaders();
+      h.setLocation(su.getUri());
 
-      List<String> safeBrowsingResult = safeBrowsingChecker(url);
+      // Async process to check if URL is safe
+      Thread safeCheckThread = new Thread(() -> {
+        try {
+          List<String> safeBrowsingResult = safeBrowsingChecker(url);
+          if (safeBrowsingResult.get(0).equals("SAFE")) {
+            shortUrlService.updateShortUrl(su, true, "");
+          } else {
+            shortUrlService.updateShortUrl(su, false, safeBrowsingResult.get(1));
+          }
+        } catch (Exception e) {
+          shortUrlService.updateShortUrl(su, false, "No se ha podido verificar con google Safe Browsing");
+          System.out.println("Exception in thread");
+        }
 
-      // If not safe return bad request
-      if (!safeBrowsingResult.get(0).equals("SAFE")) {
-        String json = Json.createObjectBuilder().add("error", safeBrowsingResult.get(1)).build().toString();
-        return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
-      } else {
-        ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
-        HttpHeaders h = new HttpHeaders();
-        h.setLocation(su.getUri());
-        return new ResponseEntity<>(su.getUri().toString(), h, HttpStatus.CREATED);
-      }
+      });
+
+      safeCheckThread.start();
+
+      return new ResponseEntity<>(su.getUri().toString(), h, HttpStatus.CREATED);
 
     } else {
       String json = Json.createObjectBuilder().add("error", "debe ser una URI http o https").build().toString();
@@ -128,10 +127,9 @@ public class UrlShortenerController {
       InputStream is = urls.getInputStream();
       br = new BufferedReader(new InputStreamReader(is));
       while ((line = br.readLine()) != null) {
-        System.out.println(line);
         urlsList.add(line);
       }
-      // Check if all urls are valid
+      // Check if all urls are valid and safe
       for (int i = 0; i < urlsList.size(); i++) {
         if (!urlValidator.isValid(urlsList.get(i))) {
           problems.add(i, "debe ser una URI http o https");
@@ -141,12 +139,35 @@ public class UrlShortenerController {
       }
 
       List<String> resultList = new ArrayList<>();
+      ShortURL firstSu = new ShortURL();
 
       for (int i = 0; i < urlsList.size(); i++) {
         if (problems.get(i).isEmpty()) {
           ShortURL su = shortUrlService.save(urlsList.get(i), "", request.getRemoteAddr());
-          System.out.println("Result url " + su.getUri().toString());
+          // Save the first URL
+          if (resultList.size() == 1) {
+            firstSu = su;
+          }
           resultList.add(su.getUri().toString());
+
+          // Async process to check if URLs are safe
+          Thread safeCheckThread = new Thread(() -> {
+            try {
+              List<String> safeBrowsingResult = safeBrowsingChecker(su.getTarget());
+              if (safeBrowsingResult.get(0).equals("SAFE")) {
+                shortUrlService.updateShortUrl(su, true, "");
+              } else {
+                shortUrlService.updateShortUrl(su, false, safeBrowsingResult.get(1));
+              }
+            } catch (Exception e) {
+              shortUrlService.updateShortUrl(su, false, "No se ha podido verificar con google Safe Browsing");
+              System.out.println("Exception in thread");
+            }
+
+          });
+
+          safeCheckThread.start();
+
         } else {
           resultList.add("");
         }
@@ -160,16 +181,8 @@ public class UrlShortenerController {
         resultString = resultString + (urlsList.get(i) + ',' + resultList.get(i) + "," + problems.get(i) + "\n");
       }
 
-      System.out.println("Result string:" + resultString);
-
-      /*
-       * File tempFile = new File("csvResponse.csv"); tempFile.delete();
-       */
-
-      // File responseFile = new File("csvResponse.csv");
-
       HttpHeaders responseHeaders = new HttpHeaders();
-      responseHeaders.add("Location", resultList.get(0));
+      responseHeaders.setLocation(firstSu.getUri());
 
       MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
       headers.add("Location", resultList.get(0));
@@ -183,7 +196,6 @@ public class UrlShortenerController {
   }
 
   public List<String> safeBrowsingChecker(String url) throws ClientProtocolException, IOException {
-
     List<String> resultList = new ArrayList<>();
 
     List<String> urlsList = new ArrayList<>();
