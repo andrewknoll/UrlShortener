@@ -24,26 +24,30 @@
                     </span>
                 </div>
                 <br>
-                <div class="row">
-                    <div class="col-lg-12 text-center">
-                        <div class="input-group input-group-lg col-sm-offset-4 col-sm-4">
-                            <form id="csvForm" enctype="multipart/form-data">
-                                Select file:
-                                <input name="urls" type="file" id="filename">
-                                <input id="urlsNum" type="number">
-                                <span>
-                                    <input id="csvButton" type="submit" value="upload">
-                                </span>
-
-                            </form>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
-        <br>
+        <div style="text-align: center;padding-bottom: 10px;">
+            <p>
+                O elige un archivo CSV con las urls a acortar aquí 👇🏼</p>
+        </div>
+        <div class="col-lg-12 text-center">
+            <div class="input-bar-item" style="margin:auto;padding-inline:40%">
+                <form id="csvForm">
+                    <div class="input-group">
+                        <input class="form-control" name="urls" type="file" id="filename">
+                        <span class="input-group-btn">
+                            <button class="btn btn-info" id="csvButton" type="submit" value="upload">
+                                Subir
+                            </button>
+                        </span>
+
+                    </div>
+                </form>
+
+            </div>
+        </div>
         <div class="row">
-            <div class="col-lg-12 text-center">
+            <div class="col-lg-12 text-center" style="padding-top: 10px;">
                 <span>
                     <p id="safeBrowsingCheck" style="color: rgb(62,63,69);"></p>
                     <p id="notifyShortening" style="color: rgb(25, 194, 115);"></p>
