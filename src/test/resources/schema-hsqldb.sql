@@ -1,6 +1,7 @@
 -- Clean database
 
 DROP TABLE CLICK IF EXISTS;
+DROP TABLE QRCODE IF EXISTS;
 DROP TABLE SHORTURL IF EXISTS;
 
 -- ShortURL
@@ -15,7 +16,17 @@ CREATE TABLE SHORTURL
     MODE    INTEGER,                 -- Redirect mode
     SAFE    BOOLEAN,                 -- Safe target
     IP      VARCHAR(20),             -- IP
-    COUNTRY VARCHAR(50)              -- Country
+    COUNTRY VARCHAR(50),              -- Country
+    DESCRIP VARCHAR(150)             -- Description in case url is unsafe
+);
+
+-- QRCode
+
+CREATE TABLE QRCODE
+(
+    HASH      VARCHAR(10) PRIMARY KEY NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Foreign and primary key
+    FILENAME  VARCHAR(100),                                                            -- FileName (if provided)
+    IMAGE     BLOB(5K) NOT NULL,                                                       -- QR code image
 );
 
 -- Click

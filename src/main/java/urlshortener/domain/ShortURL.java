@@ -12,10 +12,10 @@ public class ShortURL {
   private Date created;
   private String owner;
   private Integer mode;
-  private Boolean safe;
+  private volatile Boolean safe;
   private String ip;
   private String country;
-  private String description;
+  private volatile String description;
 
   public ShortURL(String hash, String target, URI uri, String sponsor, Date created, String owner, Integer mode,
       Boolean safe, String ip, String country, String description) {

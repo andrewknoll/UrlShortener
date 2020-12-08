@@ -12,6 +12,7 @@ targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 
@@ -19,6 +20,7 @@ repositories {
 dependencies {
     compile group: 'org.glassfish', name: 'javax.json', version: '1.1.4'
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+    compile 'com.github.kenglxn.QRGen:javase:2.6.0'
     
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
@@ -30,7 +32,7 @@ dependencies {
     runtime 'org.webjars:bootstrap:3.3.5'
     runtime 'org.webjars:jquery:2.1.4'
 
-    runtime 'org.hsqldb:hsqldb'
+    compile 'org.hsqldb:hsqldb'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.apache.httpcomponents:httpclient'
