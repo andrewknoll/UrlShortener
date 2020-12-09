@@ -163,7 +163,7 @@ function sendMultipleUrls() {
 
     $.ajax({
         type: "POST",
-        url: "/multiplelLinks",
+        url: "/multipleLinks",
         data: formDataUrls,
         processData: false,
         enctype: 'multipart/form-data',

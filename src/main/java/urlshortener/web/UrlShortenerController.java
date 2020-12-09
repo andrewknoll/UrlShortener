@@ -4,20 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonBuilderFactory;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
 import org.springframework.http.MediaType;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -25,16 +16,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,11 +28,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
 import urlshortener.service.QRService;
+import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
 
 @RestController
@@ -59,10 +43,13 @@ public class UrlShortenerController {
 
   private final QRService qrService;
 
-  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService) {
+  private final SafeCheckService safeCheckService;
+
+  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService, SafeCheckService safeCheckService) {
     this.shortUrlService = shortUrlService;
     this.clickService = clickService;
     this.qrService = qrService;
+    this.safeCheckService = safeCheckService;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -141,23 +128,7 @@ public class UrlShortenerController {
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
 
-      // Async process to check if URL is safe
-      Thread safeCheckThread = new Thread(() -> {
-        try {
-          List<String> safeBrowsingResult = safeBrowsingChecker(url);
-          if (safeBrowsingResult.get(0).equals("SAFE")) {
-            shortUrlService.updateShortUrl(su, true, "");
-          } else {
-            shortUrlService.updateShortUrl(su, false, safeBrowsingResult.get(1));
-          }
-        } catch (Exception e) {
-          shortUrlService.updateShortUrl(su, false, "No se ha podido verificar con google Safe Browsing");
-          System.out.println("Exception in thread");
-        }
-
-      });
-
-      safeCheckThread.start();
+      safeBrowsingCheck(su, url);
 
       return new ResponseEntity<>(su, h, HttpStatus.CREATED);
 
@@ -168,7 +139,7 @@ public class UrlShortenerController {
 
   }
 
-  @RequestMapping(value = "/multiplelLinks", method = RequestMethod.POST, produces = "text/csv")
+  @RequestMapping(value = "/multipleLinks", method = RequestMethod.POST, produces = "text/csv")
   public ResponseEntity<String> multipleShortener(@RequestParam("urls") MultipartFile urls,
       HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
@@ -207,23 +178,10 @@ public class UrlShortenerController {
           }
           resultList.add(su.getUri().toString());
 
+
+
           // Async process to check if URLs are safe
-          Thread safeCheckThread = new Thread(() -> {
-            try {
-              List<String> safeBrowsingResult = safeBrowsingChecker(su.getTarget());
-              if (safeBrowsingResult.get(0).equals("SAFE")) {
-                shortUrlService.updateShortUrl(su, true, "");
-              } else {
-                shortUrlService.updateShortUrl(su, false, safeBrowsingResult.get(1));
-              }
-            } catch (Exception e) {
-              shortUrlService.updateShortUrl(su, false, "No se ha podido verificar con google Safe Browsing");
-              System.out.println("Exception in thread");
-            }
-
-          });
-
-          safeCheckThread.start();
+          safeBrowsingCheck(su, su.getTarget());
 
         } else {
           resultList.add("");
@@ -252,106 +210,19 @@ public class UrlShortenerController {
     }
   }
 
-  public List<String> safeBrowsingChecker(String url) throws ClientProtocolException, IOException {
-    List<String> resultList = new ArrayList<>();
-
-    List<String> urlsList = new ArrayList<>();
-    urlsList.add(url);
-
-    String json = buildPayload(urlsList);
-
-    String safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyD2-m3JAvdEYiAzPLhF-uVN2ZUIW6MkXU4";
-
-    HttpPost post = new HttpPost(safeBrowsingUrl);
-    post.addHeader("content-type", "application/json");
-    String result = "";
-    int code = 0;
-
-    // send a JSON data
+  public void safeBrowsingCheck(ShortURL su, String url){
     try {
-      post.setEntity(new StringEntity(json));
-
-      try (CloseableHttpClient httpClient = HttpClients.createDefault();
-          CloseableHttpResponse response = httpClient.execute(post)) {
-        result = EntityUtils.toString(response.getEntity());
-        code = response.getStatusLine().getStatusCode();
-      }
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-      resultList.add(0, "REQUEST_ERROR");
-      resultList.add(1, "Error enviando peticion a Google Safe Browsing");
-      return resultList;
+      safeCheckService.safeBrowsingChecker(url).thenAcceptAsync((result) -> {
+        if (result.get(0).equals("SAFE")) {
+          shortUrlService.updateShortUrl(su, true, "");
+        } else {
+          shortUrlService.updateShortUrl(su, false, result.get(1));
+        }
+      });
+    } catch (Exception e) {
+      shortUrlService.updateShortUrl(su, false, "No se ha podido verificar con google Safe Browsing");
+      System.out.println("Exception in thread");
     }
-    JsonReader jsonReader = Json.createReader(new StringReader(result));
-    JsonObject jsonObject = jsonReader.readObject();
-    jsonReader.close();
-
-    if (code != 200) {
-      resultList.add(0, "REQUEST_ERROR");
-      resultList.add(1, "Google Safe Browsing ha devuelto statuscode " + code);
-      return resultList;
-    }
-
-    // Not a threat
-    if (jsonObject.isEmpty()) {
-      resultList.add("SAFE");
-      return resultList;
-    } else {
-
-      // A threat
-      JsonArray threats = jsonObject.getJsonArray("matches");
-      for (int i = 0; i < threats.size(); i++) {
-        String currentThreatType = threats.getJsonObject(i).getString("threatType");
-        resultList.add(0, "UNSAFE");
-        resultList.add(1, "URL marcada por Google Safe Browsing como  " + currentThreatType);
-      }
-
-      return resultList;
-    }
-
-  }
-
-  private static String buildPayload(List<String> urls) {
-
-    Map<String, ?> config = new HashMap<String, Object>();
-    JsonBuilderFactory factory = Json.createBuilderFactory(config);
-    // Create Payload
-    String json = "";
-    if (urls.size() == 1) {
-      // Payload with 1 url
-      json = Json.createObjectBuilder()
-          .add("client",
-              factory.createObjectBuilder().add("clientId", "urlshortener-295117").add("clientVersion", "1.5.2"))
-          .add("threatInfo",
-              factory.createObjectBuilder()
-                  .add("threatTypes",
-                      factory.createArrayBuilder().add("THREAT_TYPE_UNSPECIFIED").add("MALWARE")
-                          .add("SOCIAL_ENGINEERING").add("UNWANTED_SOFTWARE").add("POTENTIALLY_HARMFUL_APPLICATION"))
-                  .add("platformTypes", factory.createArrayBuilder().add("ANY_PLATFORM"))
-                  .add("threatEntryTypes", factory.createArrayBuilder().add("URL")).add("threatEntries",
-                      factory.createArrayBuilder().add(factory.createObjectBuilder().add("url", urls.get(0)))))
-          .build().toString();
-
-    } else {
-      // Payload with with multiple urls
-      JsonArrayBuilder threatEntriesarray = factory.createArrayBuilder();
-      for (int i = 0; i < urls.size(); i++) {
-        threatEntriesarray.add(factory.createObjectBuilder().add("url", urls.get(i)));
-      }
-      json = Json.createObjectBuilder()
-          .add("client",
-              factory.createObjectBuilder().add("clientId", "urlshortener-295117").add("clientVersion", "1.5.2"))
-          .add("threatInfo",
-              factory.createObjectBuilder()
-                  .add("threatTypes",
-                      factory.createArrayBuilder().add("THREAT_TYPE_UNSPECIFIED").add("MALWARE")
-                          .add("SOCIAL_ENGINEERING").add("UNWANTED_SOFTWARE").add("POTENTIALLY_HARMFUL_APPLICATION"))
-                  .add("platformTypes", factory.createArrayBuilder().add("ANY_PLATFORM"))
-                  .add("threatEntryTypes", factory.createArrayBuilder().add("URL"))
-                  .add("threatEntries", threatEntriesarray))
-          .build().toString();
-    }
-    return json;
   }
 
   private String extractIP(HttpServletRequest request) {
