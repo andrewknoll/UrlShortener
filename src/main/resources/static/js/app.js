@@ -17,9 +17,9 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
             data: {
                 "url": introducedUrl
             },
-            success: function(shortUrl, status, response) {
+            success: function(msg) {
                 $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing... ⏳");
-                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + shortUrl + "'>" + shortUrl + "</a></div>");
+                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
                 $("#notifyShortening").text("");
                 $('#urlInput').val('');
             },
@@ -94,49 +94,51 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
         reader.readAsText(csvFile);
 
     });
-    
-    $("#qrButton").click(function (event) {
+
+    $("#qrButton").click(function(event) {
         /*$.ajax({
-            type: "POST",
-            url: "/qr",
-            data: {
-                "hash": shortenedHash
-            },
-            success: function (msg) {
-                var binary = new Uint8Array(msg);
-                var blob = new Blob(binary, { 'type': 'image/png' });
-                /*var cosa = _arrayBufferToBase64(msg);
-                $("#result").html("<div class='alert alert-danger lead'>" + cosa + "</div>");
-                
+                                                             type: "POST",
+                                                             url: "/qr",
+                                                             data: {
+                                                                 "hash": shortenedHash
+                                                             },
+                                                             success: function (msg) {
+                                                                 var binary = new Uint8Array(msg);
+                                                                 var blob = new Blob(binary, { 'type': 'image/png' });
+                                                                 /*var cosa = _arrayBufferToBase64(msg);
+                                                                 $("#result").html("<div class='alert alert-danger lead'>" + cosa + "</div>");
+                                                                 
 
 
-                $("#qrImage").attr('src', `${base64data}`);
-            },
-            error: function (msg) {
-                $("#result").html("<div class='alert alert-danger lead'>ERROR" + msg.status + "</div>");
-            }
-        });
-        */
+                                                                 $("#qrImage").attr('src', `${base64data}`);
+                                                             },
+                                                             error: function (msg) {
+                                                                 $("#result").html("<div class='alert alert-danger lead'>ERROR" + msg.status + "</div>");
+                                                             }
+                                                         });
+                                                         */
         var xhr = new XMLHttpRequest();
-       xhr.open('post',`${document.URL}/qr?hash=${shortenedHash}`)
-           xhr.onload = function(){
-               var img = new Image();
-               var response = xhr.responseText;
-               var binary = new Uint8Array(response.length);
-               
-               for(var i=0;i<response.length;i++){
-                   binary[i] = response.charCodeAt(i) & 0xff;
-               }
-               
-               img.src = URL.createObjectURL(new Blob([binary.buffer]));
-               document.body.appendChild(img)
-   
-           }
-           xhr.overrideMimeType('text/plain; charset=x-user-defined');
-           xhr.send();
+        xhr.open('post', `${
+            document.URL
+        }/qr?hash=${shortenedHash}`)
+        xhr.onload = function() {
+            var img = new Image();
+            var response = xhr.responseText;
+            var binary = new Uint8Array(response.length);
+
+            for (var i = 0; i < response.length; i++) {
+                binary[i] = response.charCodeAt(i) & 0xff;
+            }
+
+            img.src = URL.createObjectURL(new Blob([binary.buffer]));
+            document.body.appendChild(img)
+
+        }
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+        xhr.send();
     });
 
-    function _arrayBufferToBase64( rawData ) {
+    function _arrayBufferToBase64(rawData) {
         return btoa(unescape(encodeURIComponent(rawData)));
     }
     // event.preventDefault();
