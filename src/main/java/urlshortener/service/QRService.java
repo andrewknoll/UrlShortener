@@ -5,7 +5,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import net.glxn.qrgen.core.image.ImageType;
@@ -28,13 +30,14 @@ public class QRService {
   public QR findByHash(String id) {
     QRCache cache = QRCache.getInstance();
     QR result = cache.find(id);
-    if (result != null){
+    if (result != null) {
       return result;
     }
     return cache.put(id, QRRepository.findByHash(id));
   }
 
-  public QR save(ShortURL su) {
+  @Async("asyncWorker")
+  public CompletableFuture<QR> save(ShortURL su) throws InterruptedException{
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     URI uri = linkTo(methodOn(UrlShortenerController.class).redirectTo(su.getHash(), null)).toUri();
     QRCode.from(uri.toString()).to(ImageType.PNG).writeTo(oos);
@@ -42,6 +45,7 @@ public class QRService {
         .hash(su.getHash())
         .uri((String h) -> linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyHash(h, null, null)).toUri())
         .code(oos.toByteArray()).build();
-    return QRRepository.save(qr);
+
+    return CompletableFuture.completedFuture(QRRepository.save(qr));
   }
 }

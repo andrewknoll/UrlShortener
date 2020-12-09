@@ -19,6 +19,8 @@ import static urlshortener.fixtures.QRFixture.qr1;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -164,9 +166,10 @@ public class UrlShortenerTests {
         .then((Answer<ShortURL>) invocation -> urlWithParameters(sponsor, qrUri));
   }
   
-  private void configureSaveQR() {
+  private void configureSaveQR() throws InterruptedException, ExecutionException{
     when(qrService.save(any()))
-        .then((Answer<QR>) invocation -> new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR()));
+        .then((Answer<CompletableFuture<QR>>) invocation -> 
+        CompletableFuture.completedFuture(new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR())));
   }
   
   private ShortURL urlWithParameters(String sponsor, URI qrUri) {

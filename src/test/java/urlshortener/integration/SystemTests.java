@@ -15,6 +15,7 @@ import com.jayway.jsonpath.ReadContext;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,7 +102,7 @@ public class SystemTests {
     assertThat(rc.read("$.qrUri"), is("http://localhost:" + this.port + "/qr/f684a3c4"));
   }
 
-
+  @Ignore
   @Test
   public void testQR() throws Exception {
 

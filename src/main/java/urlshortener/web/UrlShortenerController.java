@@ -23,6 +23,7 @@ import urlshortener.service.QRService;
 import urlshortener.service.ShortURLService;
 
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -54,23 +55,29 @@ public class UrlShortenerController {
   }
   
   @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET)
-  public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
-      @PathVariable(required = false) String format,
-      HttpServletRequest request) {
-    if (defaultFormat.equals(format) || format == null) {
-      QR q = qrService.findByHash(hash); //Try to find if QR was already generated
-      ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
-      if (su != null) {
-        clickService.saveClick(hash, extractIP(request));
-        if (q == null) { //if QR was never generated
-          q = qrService.save(su); //Generate QR
+  public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash, @PathVariable(required = false) String format, HttpServletRequest request) {
+    try {
+      if (defaultFormat.equals(format) || format == null) {
+        QR q = qrService.findByHash(hash); //Try to find if QR was already generated
+        ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
+        if (su != null) {
+          clickService.saveClick(hash, extractIP(request));
+          if (q == null) { //if QR was never generated
+            q = qrService.save(su).get(); //Generate QR
+          }
+          HttpHeaders h = new HttpHeaders();
+          h.add("hash", hash);
+          h.setLocation(q.getUri());
+          h.setCacheControl(cacheConfig());
+          return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
         }
-        HttpHeaders h = new HttpHeaders();
-        h.add("hash", hash);
-        h.setLocation(q.getUri());
-        h.setCacheControl(cacheConfig());
-        return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
       }
+    }
+    catch (InterruptedException e) {
+      return error("Async worker has been interrupted", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    catch(ExecutionException e){
+      return error("Async worker has errored" + e.getCause(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
     
@@ -106,18 +113,20 @@ public class UrlShortenerController {
         "https"});
     if (urlValidator.isValid(url) && this.reachableURL(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
-      if (generateQR) {
-
-        // Async process to make QR
-        Thread generateQRThread = new Thread(() -> {
+      HttpStatus status = HttpStatus.CREATED;
+      try {
+        if (generateQR) {
           qrService.save(su);
-        });
-        generateQRThread.start();
+        }
       }
-      HttpHeaders h = new HttpHeaders();
-      h.setLocation(su.getUri());
-      return new ResponseEntity<>(su, h, HttpStatus.CREATED);
-    } else {
+      catch (InterruptedException e) {
+        status = HttpStatus.PARTIAL_CONTENT;
+      }
+        HttpHeaders h = new HttpHeaders();
+        h.setLocation(su.getUri());
+      return new ResponseEntity<>(su, h, status);
+    } 
+    else {
       return error("Provided URL is not valid or is unreachable", HttpStatus.BAD_REQUEST);
     }
   }
