@@ -12,14 +12,15 @@ public class ShortURL {
   private Date created;
   private String owner;
   private Integer mode;
-  private Boolean safe;
+  private volatile Boolean safe;
   private String ip;
   private String country;
   private URI qrUri;
+  private volatile String description;
 
   public ShortURL(String hash, String target, URI uri, String sponsor,
                   Date created, String owner, Integer mode, Boolean safe, String ip,
-                  String country, URI qrUri) {
+                  String country, URI qrUri, String description) {
     this.hash = hash;
     this.target = target;
     this.uri = uri;
@@ -31,9 +32,14 @@ public class ShortURL {
     this.ip = ip;
     this.country = country;
     this.qrUri = qrUri;
+    this.description = description;
   }
 
   public ShortURL() {
+  }
+
+  public String getDescription() {
+    return description;
   }
 
   public String getHash() {
@@ -78,6 +84,14 @@ public class ShortURL {
 
   public URI getqrUri() {
     return qrUri;
+  }
+
+  public void setDescription(String desc) {
+    this.description = desc;
+  }
+
+  public void setSafe(boolean safe) {
+    this.safe = safe;
   }
 
 }

@@ -1,115 +1,103 @@
-$(document).ready(function () {
-
-    var safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyD2-m3JAvdEYiAzPLhF-uVN2ZUIW6MkXU4";
+$(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-dot-offgl8876899977678.uk.r.appspot.com/xxx
 
     var shortenedHash = null;
 
-    $("#searchButton").click(function (event) {
+    $("#searchButton").click(function(event) {
+        $("#safeBrowsingCheck").text("");
+        $("#result").html("<div</div>");
+        var introducedUrl = $('#urlInput').val();
+        if (introducedUrl == "") {
+            $("#safeBrowsingCheck").text("Please insert a url !👆🏼");
+            return false;
+        }
 
-        var originalUrl = $('#urlInput').val();
-
-        console.log(`Original url: ${originalUrl}`);
-
-        payload = {
-            "client": {
-                "clientId": "urlshortener-295117",
-                "clientVersion": "1.5.2"
-            },
-            "threatInfo": {
-                "threatTypes": [
-                    "THREAT_TYPE_UNSPECIFIED",
-                    "MALWARE",
-                    "SOCIAL_ENGINEERING",
-                    "UNWANTED_SOFTWARE",
-                    "POTENTIALLY_HARMFUL_APPLICATION"
-                ],
-                "platformTypes": ["ANY_PLATFORM"],
-                "threatEntryTypes": ["URL"],
-                "threatEntries": [
-                    {
-                        "url": originalUrl
-                    }
-                ]
-            }
-        };
-
-
-        // Google safe browsing call
         $.ajax({
             type: "POST",
-            url: safeBrowsingUrl,
-            data: JSON.stringify(payload),
-            headers: {
-                "Content-Type": "application/json"
+            url: "/link",
+            data: {
+                "url": introducedUrl
             },
-            dataType: 'json',
-            beforeSend: function () {
-                $("#safeBrowsingCheck").text("Checking URL against Google safe browsing ...");
+            success: function (msg) {
+                shortenedHash = msg.hash;
+                $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing... ⏳");
+                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
+                $("#notifyShortening").text("");
+                $('#urlInput').val('');
+                $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
             },
-            success: function (output, status, xhr) {
-
-                console.log(`Output: ${
-                    JSON.stringify(output)
-                } and status ${status}`);
-
-                if (JSON.stringify(output) == "{}") {
-                    $("#safeBrowsingCheck").text("This website is verified by google safe browsing ✅");
-                    $("#notifyShortening").text("Shortening url ...");
-                    var url = $('#urlInput').val();
-                    console.log(`Sending url: ${url} as data`);
-                    $.ajax({
-                        type: "POST",
-                        url: "/link",
-                        data: {
-                            "url": url
-                        },
-                        success: function (msg) {
-                            shortenedHash = msg.hash;
-                            $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
-                            $('#urlInput').val('');
-                            $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
-                        },
-                        error: function () {
-                            $("#result").html("<div class='alert alert-danger lead'>ERROR</div>");
-                        }
-                    });
-                } else {
-                    $("#safeBrowsingCheck").text("Can't shorten this url because this url marked as unsafe by Google Safe Browsing ❌");
-                }
-
-
-            },
-            error: function (params) {
-                alert("Error en peticion");
+            error: function(output) { // output.status para statuscode
+                $("#result").html("<div class='alert alert-danger lead'> ERROR: " + JSON.parse(output.responseText).error + "</div>");
+                $('#urlInput').val('');
             }
-
-
         });
+    });
+
+
+    $("#csvButton").click(function(event) {
+        event.preventDefault();
+        var urlsNum = $("#urlsNum").val();
+
+        $("#safeBrowsingCheck").text("");
+        $("#result").html("<div</div>");
+        var csv = $('#filename');
+        var csvFile = csv[0].files[0];
+        var ext = csv.val().split(".").pop().toLowerCase();
+
+        if ($.inArray(ext, ["csv"]) === -1) {
+            alert('Please upload a CSV file');
+            return false;
+        } else {
+            var form = $('#csvForm')[0];
+            var formDataUrls = new FormData(form);
+
+            $.ajax({
+                type: "POST",
+                url: "/multipleLinks",
+                data: formDataUrls,
+                processData: false,
+                enctype: 'multipart/form-data',
+                contentType: false,
+                success: function(csvContent, status, response) {
+
+                    console.log(`Received headers ${
+                        response.getResponseHeader('Location')
+                    } , status ${
+                        response.status
+                    } and content: \n ${csvContent}`);
+
+                    $("#safeBrowsingCheck").text("Verificando y acordando urls... ⏳");
+                    $("#notifyShortening").text("Success shortening");
+
+
+                    var encodedUri = encodeURI(csvContent);
+                    var link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", "Short-urls.csv");
+                    document.body.appendChild(link);
+                    if (confirm('¿Quieres descargar el CSV con las urls acortadas?')) {
+                        link.click();
+                        $("#notifyShortening").text("Archivo descargado ✅");
+
+                    } else {
+                        $("#notifyShortening").text("Operación calcelada ❌");
+                    }
+
+
+                },
+                error: function(output, status, xhr) {
+                    $("#safeBrowsingCheck").text("Sorry got statuscode " + output.status);
+
+
+                }
+            });;
+        }
+
+
+        reader.readAsText(csvFile);
 
     });
 
     $("#qrButton").click(function (event) {
-        /*$.ajax({
-            type: "POST",
-            url: "/qr",
-            data: {
-                "hash": shortenedHash
-            },
-            success: function (msg) {
-                var binary = new Uint8Array(msg);
-                var blob = new Blob(binary, { 'type': 'image/png' });
-                /*var cosa = _arrayBufferToBase64(msg);
-                $("#result").html("<div class='alert alert-danger lead'>" + cosa + "</div>");
-                
-
-
-                $("#qrImage").attr('src', `${base64data}`);
-            },
-            error: function (msg) {
-                $("#result").html("<div class='alert alert-danger lead'>ERROR" + msg.status + "</div>");
-            }
-        });
-        */
         var xhr = new XMLHttpRequest();
         xhr.open('get',`${document.URL}/qr/${shortenedHash}`)
            xhr.onload = function(){
@@ -129,7 +117,7 @@ $(document).ready(function () {
            xhr.send();
     });
 
-    function _arrayBufferToBase64( rawData ) {
+    function _arrayBufferToBase64(rawData) {
         return btoa(unescape(encodeURIComponent(rawData)));
     }
     // event.preventDefault();

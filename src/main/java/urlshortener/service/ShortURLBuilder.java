@@ -2,7 +2,6 @@ package urlshortener.service;
 
 import static com.google.common.hash.Hashing.murmur3_32;
 
-
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -24,30 +23,19 @@ public class ShortURLBuilder {
   private String ip;
   private String country;
   private URI qrUri;
+  private String desc;
 
   static ShortURLBuilder newInstance() {
     return new ShortURLBuilder();
   }
 
   ShortURL build() {
-    return new ShortURL(
-        hash,
-        target,
-        uri,
-        sponsor,
-        created,
-        owner,
-        mode,
-        safe,
-        ip,
-        country,
-        qrUri
-    );
+    return new ShortURL(hash, target, uri, sponsor, created, owner, mode, safe, ip, country, qrUri, desc);
   }
 
   ShortURLBuilder target(String url) {
     target = url;
-    //noinspection UnstableApiUsage
+    // noinspection UnstableApiUsage
     hash = murmur3_32().hashString(url, StandardCharsets.UTF_8).toString();
     return this;
   }
@@ -77,6 +65,11 @@ public class ShortURLBuilder {
     return this;
   }
 
+  ShortURLBuilder treatAsUnsafe() {
+    this.safe = false;
+    return this;
+  }
+
   ShortURLBuilder ip(String ip) {
     this.ip = ip;
     return this;
@@ -92,13 +85,18 @@ public class ShortURLBuilder {
     return this;
   }
 
-  ShortURLBuilder qrGenerated(Function<String, URI> extractor, boolean wasGenerated) {
+ShortURLBuilder qrGenerated(Function<String, URI> extractor, boolean wasGenerated) {
     if (wasGenerated) {
       this.qrUri = extractor.apply(hash);
     }
     else {
       this.qrUri = null;
     }
+    return this;
+  }
+
+ShortURLBuilder description(String desc) {
+    this.desc = desc;
     return this;
   }
 }

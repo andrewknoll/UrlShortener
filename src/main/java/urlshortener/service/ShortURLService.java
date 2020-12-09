@@ -3,7 +3,6 @@ package urlshortener.service;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-
 import org.springframework.stereotype.Service;
 import urlshortener.domain.ShortURL;
 import urlshortener.repository.ShortURLRepository;
@@ -36,7 +35,14 @@ public class ShortURLService {
         .unknownCountry()
         .qrGenerated((String hash) -> linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyHash(hash, null, null))
             .toUri(), qrWasGenerated)
+        .description("Aun no verificada")
         .build();
     return shortURLRepository.save(su);
+  }
+
+  public void updateShortUrl(ShortURL su, boolean safe, String description) {
+    su.setSafe(safe);
+    su.setDescription(description);
+    shortURLRepository.update(su);
   }
 }

@@ -184,7 +184,8 @@ public class UrlShortenerTests {
             false,
             null,
             null,
-            qrUri);
+            qrUri,
+            null);
   }
 
 }
