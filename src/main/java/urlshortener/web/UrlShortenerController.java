@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URL;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.validator.routines.UrlValidator;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import urlshortener.service.QRService;
 import urlshortener.service.ShortURLService;
 
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 public class UrlShortenerController {
@@ -66,6 +68,7 @@ public class UrlShortenerController {
         HttpHeaders h = new HttpHeaders();
         h.add("hash", hash);
         h.setLocation(q.getUri());
+        h.setCacheControl(cacheConfig());
         return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
       }
     }
@@ -104,7 +107,12 @@ public class UrlShortenerController {
     if (urlValidator.isValid(url) && this.reachableURL(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
       if (generateQR) {
-        qrService.save(su);
+
+        // Async process to make QR
+        Thread generateQRThread = new Thread(() -> {
+          qrService.save(su);
+        });
+        generateQRThread.start();
       }
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
@@ -147,5 +155,10 @@ public class UrlShortenerController {
     HashMap<String, String> map = new HashMap<>();
     map.put("error", message);
     return new ResponseEntity<>(map, status);
+  }
+
+  private CacheControl cacheConfig() {
+    return CacheControl.maxAge(10, TimeUnit.DAYS).cachePublic();
+
   }
 }

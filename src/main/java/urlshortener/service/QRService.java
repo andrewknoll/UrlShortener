@@ -13,6 +13,7 @@ import net.glxn.qrgen.javase.QRCode;
 import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.repository.QRRepository;
+import urlshortener.repository.impl.QRCache;
 import urlshortener.web.UrlShortenerController;
 
 @Service
@@ -25,7 +26,12 @@ public class QRService {
   }
 
   public QR findByHash(String id) {
-    return QRRepository.findByHash(id);
+    QRCache cache = QRCache.getInstance();
+    QR result = cache.find(id);
+    if (result != null){
+      return result;
+    }
+    return cache.put(id, QRRepository.findByHash(id));
   }
 
   public QR save(ShortURL su) {
