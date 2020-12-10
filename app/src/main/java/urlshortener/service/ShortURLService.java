@@ -55,7 +55,8 @@ public class ShortURLService {
     return shortURLRepository.save(su);
   }
 
-  public void updateShortUrl(ShortURL su, boolean safe, String description) {
+  public void updateShortUrl(ShortURL su, URI uri, boolean safe, String description) {
+    su.setUri(uri);
     su.setSafe(safe);
     su.setDescription(description);
     shortURLRepository.update(su);

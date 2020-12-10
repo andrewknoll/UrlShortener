@@ -94,4 +94,7 @@ public class ShortURL {
     this.safe = safe;
   }
 
+  public void setUri(URI uri) {
+    this.uri = uri;
+  }
 }

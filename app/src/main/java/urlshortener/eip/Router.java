@@ -15,9 +15,9 @@ public class Router extends RouteBuilder {
   public static String HOST2;
 
   @Autowired
-  public Router(@Value("${host1}") String HOST1, @Value("${host2}") String HOST2) {
-      this.HOST1 = HOST1;
-      this.HOST2 = HOST2;
+  public Router(@Value("${host1}") String host1, @Value("${host2}") String host2) {
+      HOST1 = host1;
+      HOST2 = host2;
   }
 
 

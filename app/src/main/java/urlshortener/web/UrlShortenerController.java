@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +38,6 @@ import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
 
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static urlshortener.eip.Router.QR_URI;
@@ -55,10 +55,11 @@ public class UrlShortenerController {
   private final ProducerTemplate producerTemplate;
 
   private final SafeCheckService safeCheckService;
-  
+
   private final String defaultFormat = "png";
 
-  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService, SafeCheckService safeCheckService, ProducerTemplate producerTemplate) {
+  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService,
+      SafeCheckService safeCheckService, ProducerTemplate producerTemplate) {
     this.shortUrlService = shortUrlService;
     this.clickService = clickService;
     this.qrService = qrService;
@@ -87,7 +88,7 @@ public class UrlShortenerController {
   public ResponseEntity<?> shortener(@RequestParam("url") String url,
       @RequestParam(value = "sponsor", required = false) String sponsor,
       @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR, HttpServletRequest request)
-      throws ClientProtocolException, IOException {
+      throws ClientProtocolException, IOException, URISyntaxException {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" }, UrlValidator.ALLOW_2_SLASHES);
 
     if (urlValidator.isValid(url)) {
@@ -99,8 +100,7 @@ public class UrlShortenerController {
         if (generateQR) {
           qrService.save(su);
         }
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         status = HttpStatus.PARTIAL_CONTENT;
       }
       safeBrowsingCheck(su, url);
@@ -115,9 +115,27 @@ public class UrlShortenerController {
   }
 
   @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET)
-    public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash, @PathVariable(required = false) String format, HttpServletRequest request) {
-      return producerTemplate.requestBody(QR_URI, hash, ResponseEntity.class);
+  public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
+      @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
+    if (defaultFormat.equals(format) || format == null) {
+      QR q = qrService.findByHash(hash); //Try to find if QR was already generated
+      ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
+      if (su != null) {
+        clickService.saveClick(hash, extractIP(request));
+        shortUrlService.updateShortUrl(su, new URI(extractIP(request) + "/" + su.getHash()), su.getSafe(), su.getDescription());
+        if (q == null) { //if QR was never generated
+          return producerTemplate.requestBody(QR_URI, hash, ResponseEntity.class);
+        } else {
+          HttpHeaders h = new HttpHeaders();
+          h.add("hash", hash);
+          h.setLocation(q.getUri());
+          h.setCacheControl(cacheConfig());
+          return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
+        }
+      }
     }
+    return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
+  }
 
   @RequestMapping(value = "/multipleLinks", method = RequestMethod.POST, produces = "text/csv")
   public ResponseEntity<String> multipleShortener(@RequestParam("urls") MultipartFile urls,
@@ -194,13 +212,13 @@ public class UrlShortenerController {
     try {
       safeCheckService.safeBrowsingChecker(url).thenAcceptAsync((result) -> {
         if (result.get(0).equals("SAFE")) {
-          shortUrlService.updateShortUrl(su, true, "");
+          shortUrlService.updateShortUrl(su, su.getUri(), true, "");
         } else {
-          shortUrlService.updateShortUrl(su, false, result.get(1));
+          shortUrlService.updateShortUrl(su, su.getUri(), false, result.get(1));
         }
       });
     } catch (Exception e) {
-      shortUrlService.updateShortUrl(su, false, "No se ha podido verificar con google Safe Browsing");
+      shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
       System.out.println("Exception in thread");
     }
   }
@@ -238,5 +256,9 @@ public class UrlShortenerController {
     HashMap<String, String> map = new HashMap<>();
     map.put("error", message);
     return new ResponseEntity<>(map, status);
+  }
+
+  private CacheControl cacheConfig() {
+    return CacheControl.maxAge(10, TimeUnit.DAYS).cachePublic();
   }
 }
