@@ -35,29 +35,21 @@ public class UrlShortenerController {
     this.qrService = qrService;
   }
 
-  @RequestMapping(value = "/{id:(?!link|index|sponsor).*}", method = RequestMethod.GET)
+  @RequestMapping( value = "/{id:(?!link|index|sponsor).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id,
       HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
       clickService.saveClick(id, extractIP(request));
-      /*ResponseEntity<?> finalDest = createSuccessfulRedirectToResponse(l);
-      if (finalDest.getStatusCode() == HttpStatus.OK){
+      //final URL = l.getTarget()
+      String finalURL = l.getTarget();
+      if ( this.reachableURL(finalURL) ){
         // URL exists and response status 200
-        HttpHeaders h = new HttpHeaders();
-        String sponsor = "localhost:8080/sponsor.html";
-        h.setLocation(URI.create(sponsor));
-        return new ResponseEntity<>(h, HttpStatus.OK);
+        return redirectThroughSponsor(l);
       }
       else{
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
       }
-      return createSuccessfulRedirectToResponse(l);
-      HttpHeaders h = new HttpHeaders();
-      String sponsor = "http://localhost:8080/sponsor.html";
-      h.setLocation(URI.create(sponsor));
-      return new ResponseEntity<>(h, HttpStatus.OK);*/
-      return createSuccessfulRedirectToResponse(l);
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
@@ -128,14 +120,15 @@ public class UrlShortenerController {
     }
   }
 
+  private ResponseEntity<?> redirectThroughSponsor(ShortURL l) {
+    HttpHeaders h = new HttpHeaders();
+    h.setLocation(URI.create("http://localhost:8080/sponsor.html"));
+    return new ResponseEntity<String>("<input id=\"urlVal\" value=\"" + l.getTarget() + "\" type=\"hidden\"/>",
+    h, HttpStatus.TEMPORARY_REDIRECT);
+  }
+  
   private String extractIP(HttpServletRequest request) {
     return request.getRemoteAddr();
-  }
-
-  private ResponseEntity<?> createSuccessfulRedirectToResponse(ShortURL l) {
-    HttpHeaders h = new HttpHeaders();
-    h.setLocation(URI.create(l.getTarget()));
-    return new ResponseEntity<>(h, HttpStatus.valueOf(l.getMode()));
   }
 
   /**
