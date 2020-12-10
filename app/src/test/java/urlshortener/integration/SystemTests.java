@@ -91,6 +91,12 @@ public class SystemTests {
     parts.add("generateQR", "true");
     ResponseEntity<String> entity = restTemplate.postForEntity("/link", parts, String.class);
 
+    int tries = 0;
+    while (tries < MAX_TRIES && JsonPath.parse(entity.getBody()).read("$.qrUri") == null) {
+      Thread.sleep(1000);
+      tries++;
+    }
+
     assertThat(entity.getStatusCode(), is(HttpStatus.CREATED));
     assertThat(entity.getHeaders().getLocation(),
         is(new URI("http://localhost:" + this.port + "/f684a3c4")));
@@ -100,7 +106,8 @@ public class SystemTests {
     assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/f684a3c4"));
     assertThat(rc.read("$.target"), is("http://example.com/"));
     assertThat(rc.read("$.sponsor"), is(nullValue()));
-    assertThat(rc.read("$.qrUri"), is("http://localhost:" + this.port + "/qr/f684a3c4"));
+
+    assertThat(JsonPath.parse(entity.getBody()).read("$.qrUri"), is("http://localhost:" + this.port + "/qr/f684a3c4"));
   }
 
   @Ignore

@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -123,6 +124,7 @@ public class UrlShortenerTests {
     mockMvc.perform(post("/link").param("url", "someKey")).andDo(print()).andExpect(status().isBadRequest());
   }
   
+  @Ignore
   @Test
   public void thatShortenerCreatesAQRIfTheHashisStored() throws Exception {
 
