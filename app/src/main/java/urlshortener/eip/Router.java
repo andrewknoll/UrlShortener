@@ -11,23 +11,23 @@ public class Router extends RouteBuilder {
   public static final String QR_URI = "direct:qr";
 
   
-  public static String HOST1;
-  public static String HOST2;
+  public String HOST1;
+  public String HOST2;
 
   @Autowired
   public Router(@Value("${host1}") String host1, @Value("${host2}") String host2) {
-      HOST1 = host1;
-      HOST2 = host2;
+      this.HOST1 = host1;
+      this.HOST2 = host2;
   }
 
-
+//TODO:Devolver algo por defecto (opcional)
   @Override
   public void configure() {
     from(QR_URI)
       .loadBalance()
       .roundRobin()
-        .toD("HOST1/qr/${body}")
-        .toD("HOST2/qr/${body}")
+        .toD(this.HOST1 + "/qr/${body}")
+        .toD(this.HOST2 + "/qr/${body}")
       .end();
   }
 }

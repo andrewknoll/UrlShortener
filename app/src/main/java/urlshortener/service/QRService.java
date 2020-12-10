@@ -46,7 +46,7 @@ public class QRService {
     }
     return cache.put(id, QRRepository.findByHash(id));
   }
-
+//TODO:Estilo
   @Async("asyncWorker")
   public CompletableFuture<QR> save(ShortURL su) throws InterruptedException {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
