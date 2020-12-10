@@ -33,8 +33,8 @@ or in Windows
 $ gradle.bat :qr:bootRun -Pport=8179
 $ gradle.bat :qr:bootRun -Pport=8180
 ```
-Ports 8179 and 8190 are the default ones.
-Should you require changing this ports, change their values in app/src/main/resources/application.properties
+Ports 8179 and 8190 are the default ones, and the value of the ip is set to "localhost".
+Should you require changing these ports/ip, change their values in app/src/main/resources/application.properties
 
 Gradle will compile project and then run it
 Now you have a shortener service running at port 8080. 
