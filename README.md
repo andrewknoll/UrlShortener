@@ -14,13 +14,27 @@ The __project__ is a [Spring Boot](http://docs.spring.io/spring-boot/docs/curren
 The application can be run in Linux and macOS as follows:
 
 ```
-$ ./gradlew bootRun
+$ ./gradlew :app:bootRun
 ```
 or in Windows
 
 ```
-$ gradle.bat bootRun
+$ gradle.bat :app:bootRun
 ```
+
+In the case of the qr functionality, 2 instances of QR have to be initialized. To do so:
+```
+$ ./gradlew :qr:bootRun -Pport=8179
+$ ./gradlew :qr:bootRun -Pport=8180
+```
+or in Windows
+
+```
+$ gradle.bat :qr:bootRun -Pport=8179
+$ gradle.bat :qr:bootRun -Pport=8180
+```
+Ports 8179 and 8190 are the default ones.
+Should you require changing this ports, change their values in app/src/main/resources/application.properties
 
 Gradle will compile project and then run it
 Now you have a shortener service running at port 8080. 
