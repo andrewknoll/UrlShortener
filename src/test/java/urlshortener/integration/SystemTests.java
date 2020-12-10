@@ -30,6 +30,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import net.glxn.qrgen.javase.QRCode;
+import urlshortener.domain.ShortURL;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -42,6 +43,7 @@ public class SystemTests {
   @LocalServerPort
   private int port;
 
+  private final int MAX_TRIES = 10;
 
   public static byte[] toByteArray(QRCode qr) {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
@@ -114,8 +116,13 @@ public class SystemTests {
 
   @Test
   public void testRedirection() throws Exception {
-    postLink("http://example.com/");
-
+    ResponseEntity<String> entityURL = postLink("http://example.com/");
+    int tries = 0;
+    while (tries < MAX_TRIES && JsonPath.parse(entityURL.getBody()).read("$.safe").toString().equals("false")) {
+      Thread.sleep(1000);
+      tries++;
+    }
+    
     ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
     assertThat(entity.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
     assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));
