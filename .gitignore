@@ -16,6 +16,9 @@ gradle-app.setting
 out/
 *.iml
 
+#ignore properties file
+app/src/main/resources/application.properties
+
 # Other
 
 db/
