@@ -16,6 +16,9 @@ gradle-app.setting
 out/
 *.iml
 
+#ignore properties file
+src/main/java/urlshortener/resources/application.properties
+
 # Other
 
 db/
