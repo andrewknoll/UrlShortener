@@ -23,11 +23,16 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SafeCheckService {
+
+  @Value("${secret_key}")
+  private String SECRET_GOOGLE_SAFE_BROWSING_KEY;
+
     @Async("asyncWorker")
     public CompletableFuture<List<String>> safeBrowsingChecker(String url) throws ClientProtocolException, IOException {
         List<String> resultList = new ArrayList<>();
@@ -37,7 +42,7 @@ public class SafeCheckService {
     
         String json = buildPayload(urlsList);
     
-        String safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=AIzaSyD2-m3JAvdEYiAzPLhF-uVN2ZUIW6MkXU4";
+        String safeBrowsingUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + SECRET_GOOGLE_SAFE_BROWSING_KEY;
     
         HttpPost post = new HttpPost(safeBrowsingUrl);
         post.addHeader("content-type", "application/json");
