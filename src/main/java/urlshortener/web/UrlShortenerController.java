@@ -78,8 +78,13 @@ public class UrlShortenerController {
   @RequestMapping(value= "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET, produces = "application/json")
   public ResponseEntity<?>getFinalURI(@PathVariable String hash, HttpServletRequest request){
     ShortURL l = shortUrlService.findByKey(hash);
-    String json = Json.createObjectBuilder().add("URI", l.getTarget()).build().toString();
-    return new ResponseEntity<>(json, HttpStatus.ACCEPTED);
+    if (l != null) {
+      String json = Json.createObjectBuilder().add("URI", l.getTarget()).build().toString();
+      return new ResponseEntity<>(json, HttpStatus.ACCEPTED);
+    }
+    else {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
   }
 
   @RequestMapping(value = "/qr/{hash:(?!link|index).*}", method = RequestMethod.GET)
