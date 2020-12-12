@@ -1,0 +1,20 @@
+plugins {
+    id 'urlshortener.java-qr-conventions'
+}
+
+
+dependencies {
+    compile 'com.github.kenglxn.QRGen:javase:2.6.0'
+    compile("org.apache.camel.springboot:camel-spring-boot-starter:3.6.0")
+}
+
+if(!project.hasProperty("port"))
+    project.ext.set("port", 8080)
+
+bootRun{
+    args += ["--server.port=${project.port}"]
+}
+
+clean.doFirst {
+    delete "db"
+}

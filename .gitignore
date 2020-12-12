@@ -17,7 +17,7 @@ out/
 *.iml
 
 #ignore properties file
-src/main/java/urlshortener/resources/application.properties
+app/src/main/resources/application.properties
 
 # Other
 
