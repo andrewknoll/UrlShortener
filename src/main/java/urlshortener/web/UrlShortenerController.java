@@ -211,6 +211,10 @@ public class UrlShortenerController {
   }
 
   public void safeBrowsingCheck(ShortURL su, String url){
+    googleSafeBrowsing(su, url, safeCheckService, shortUrlService);
+  }
+
+  public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService, ShortURLService shortUrlService) {
     try {
       safeCheckService.safeBrowsingChecker(url).thenAcceptAsync((result) -> {
         if (result.get(0).equals("SAFE")) {
