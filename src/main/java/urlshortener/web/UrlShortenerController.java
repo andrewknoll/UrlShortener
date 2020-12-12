@@ -7,8 +7,6 @@ import java.util.List;
 
 import javax.json.Json;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.coyote.Response;
 import org.springframework.http.MediaType;
 import java.net.HttpURLConnection;
 import java.net.URL;
