@@ -1,14 +1,14 @@
 package urlshortener.web;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.Json;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.coyote.Response;
 import org.springframework.http.MediaType;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -60,15 +60,28 @@ public class UrlShortenerController {
       String finalURL = l.getTarget();
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
-        //return createSuccessfulRedirectToResponse(l);
-        return redirectThroughSponsor(l);
-      } else {
+        return redirectThroughSponsor();
+      } else if (!l.getSafe()){
         String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
+        return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
+      }
+      else {
+        String json = Json.createObjectBuilder().add("error", "URI not reachable").build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
       }
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+  }
+
+  /**
+   * We can recover final URI (in JSON format) from hash thanks to this GET method
+   */
+  @RequestMapping(value= "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET, produces = "application/json")
+  public ResponseEntity<?>getFinalURI(@PathVariable String hash, HttpServletRequest request){
+    ShortURL l = shortUrlService.findByKey(hash);
+    String json = Json.createObjectBuilder().add("URI", l.getTarget()).build().toString();
+    return new ResponseEntity<>(json, HttpStatus.ACCEPTED);
   }
 
   @RequestMapping(value = "/qr/{hash:(?!link|index).*}", method = RequestMethod.GET)
@@ -227,21 +240,34 @@ public class UrlShortenerController {
     }
   }
 
-  private ResponseEntity<?> redirectThroughSponsor(ShortURL l) {
-    HttpHeaders h = new HttpHeaders();
-    h.setLocation(URI.create("http://localhost:8080/sponsor.html"));
-    return new ResponseEntity<String>("<input id=\"urlVal\" value=\"" + l.getTarget() + "\" type=\"hidden\"/>",
-    h, HttpStatus.TEMPORARY_REDIRECT);
+  /**
+   * Function that shows sponsor.html page before redirecting to final URI
+   */
+  private ResponseEntity<?> redirectThroughSponsor() {
+    // Path to sponsor.html file
+    String sponsorPath = "./src/main/resources/static/sponsor.html";
+    // Reading HTML file
+    StringBuilder resultStringBuilder = new StringBuilder();
+    try (BufferedReader br = new BufferedReader(new FileReader(sponsorPath))) {
+      String line;
+      while ((line = br.readLine()) != null) {
+        resultStringBuilder.append(line).append("\n");
+      }
+      // Data = html string and closinf buffer
+      String data = resultStringBuilder.toString();
+      br.close();
+      // Shows sponsor.html page without changing location
+      return new ResponseEntity<>(data, HttpStatus.TEMPORARY_REDIRECT);
+    }
+    catch(Exception e) {
+      e.getStackTrace();
+      System.out.print(e);
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
   }
 
   private String extractIP(HttpServletRequest request) {
     return request.getRemoteAddr();
-  }
-
-  private ResponseEntity<?> createSuccessfulRedirectToResponse(ShortURL l) {
-    HttpHeaders h = new HttpHeaders();
-    h.setLocation(URI.create(l.getTarget()));
-    return new ResponseEntity<>(h, HttpStatus.valueOf(l.getMode()));
   }
 
   /**
