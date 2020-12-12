@@ -43,7 +43,7 @@ public class WebSocketController extends RouteBuilder {
             String url = exchange.getIn().getBody(String.class);
             UrlValidator urlValidator = new UrlValidator(new String[]{"http", "https"}, UrlValidator.ALLOW_2_SLASHES);
             if (urlValidator.isValid(url)) {
-                ShortURL su = shortUrlService.save(url, "", "");
+                ShortURL su = shortUrlService.save(url, "", "",false);
                 safeBrowsingCheck(su, url);
                 exchange.getIn().setBody("http://localhost:8080" + su.getUri().toString());
             } else {

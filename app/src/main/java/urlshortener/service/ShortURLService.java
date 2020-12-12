@@ -25,7 +25,7 @@ public class ShortURLService {
   public ShortURL save(String url, String sponsor, String ip, boolean qrWasGenerated) {
     ShortURL su = ShortURLBuilder.newInstance().target(url)
         .uri((String hash) -> linkTo(methodOn(UrlShortenerController.class).redirectTo(hash, null)).toUri())
-        .sponsor(sponsor).createdNow().randomOwner().temporaryRedirect().treatAsSafe().ip(ip).unknownCountry()
+        .sponsor(sponsor).createdNow().randomOwner().temporaryRedirect().treatAsUnsafe().ip(ip).unknownCountry()
         .qrGenerated((String hash) -> {
           try{
             return linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyHash(hash, null, null)).toUri();

@@ -59,12 +59,6 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
                 contentType: false,
                 success: function(csvContent, status, response) {
 
-                    console.log(`Received headers ${
-                        response.getResponseHeader('Location')
-                    } , status ${
-                        response.status
-                    } and content: \n ${csvContent}`);
-
                     $("#safeBrowsingCheck").text("Verificando y acordando urls... ⏳");
                     $("#notifyShortening").text("Success shortening");
 

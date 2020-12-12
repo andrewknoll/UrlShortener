@@ -6,6 +6,7 @@ plugins {
 dependencies {
     compile 'com.github.kenglxn.QRGen:javase:2.6.0'
     compile("org.apache.camel.springboot:camel-spring-boot-starter:3.6.0")
+    compile group: 'org.apache.camel', name: 'camel-websocket', version: '3.6.0'
 }
 
 clean.doFirst {
