@@ -3,11 +3,14 @@ package urlshortener.web;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.Json;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -56,8 +59,12 @@ public class UrlShortenerController {
 
   private final String defaultFormat = "png";
 
+  // Path to sponsor.html file
+  @Value("classpath:static/sponsor.html")
+  Resource sponsorResource;
+
   public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService,
-      SafeCheckService safeCheckService, ProducerTemplate producerTemplate) {
+      SafeCheckService safeCheckService, ProducerTemplate producerTemplate) throws IOException {
     this.shortUrlService = shortUrlService;
     this.clickService = clickService;
     this.qrService = qrService;
@@ -71,6 +78,7 @@ public class UrlShortenerController {
     if (l != null) {
       // If not safe return bad request
       String finalURL = l.getTarget();
+      System.out.println("Uri is safe " + l.getSafe().toString() );
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
         return redirectThroughSponsor();
@@ -231,8 +239,10 @@ public class UrlShortenerController {
   }
 
   public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService, ShortURLService shortUrlService) {
+
     try {
       safeCheckService.safeBrowsingChecker(url).thenAcceptAsync((result) -> {
+
         if (result.get(0).equals("SAFE")) {
           shortUrlService.updateShortUrl(su, su.getUri(), true, "");
         } else {
@@ -249,25 +259,19 @@ public class UrlShortenerController {
    * Function that shows sponsor.html page before redirecting to final URI
    */
   private ResponseEntity<?> redirectThroughSponsor() {
-    // Path to sponsor.html file
-    String sponsorPath = "./src/main/resources/static/sponsor.html";
-    // Reading HTML file
-    StringBuilder resultStringBuilder = new StringBuilder();
-    try (BufferedReader br = new BufferedReader(new FileReader(sponsorPath))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        resultStringBuilder.append(line).append("\n");
-      }
-      // Data = html string and closinf buffer
-      String data = resultStringBuilder.toString();
-      br.close();
+    try {
+      // Reading HTML file
+      File resource = sponsorResource.getFile();
+      // Data = html string
+      String data = new String(
+              Files.readAllBytes(resource.toPath()));
       // Shows sponsor.html page without changing location
       return new ResponseEntity<>(data, HttpStatus.TEMPORARY_REDIRECT);
-    }
-    catch(Exception e) {
-      e.getStackTrace();
-      System.out.print(e);
+
+    }catch (IOException e) {
+      e.printStackTrace();
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
     }
   }
 

@@ -23,6 +23,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -30,13 +32,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class SafeCheckService {
 
-  @Value("${secret_key}")
+    static public Logger logger = LoggerFactory.getLogger(SafeCheckService.class);
+    @Value("${secret_key}")
   private String SECRET_GOOGLE_SAFE_BROWSING_KEY;
 
     @Async("asyncWorker")
-    public CompletableFuture<List<String>> safeBrowsingChecker(String url) throws ClientProtocolException, IOException {
+    public CompletableFuture<List<String>> safeBrowsingChecker(String url) throws IOException {
         List<String> resultList = new ArrayList<>();
-    
         List<String> urlsList = new ArrayList<>();
         urlsList.add(url);
     
@@ -51,33 +53,34 @@ public class SafeCheckService {
     
         // send a JSON data
         try {
-          post.setEntity(new StringEntity(json));
-    
-          try (CloseableHttpClient httpClient = HttpClients.createDefault();
+            post.setEntity(new StringEntity(json));
+            try (CloseableHttpClient httpClient = HttpClients.createDefault();
               CloseableHttpResponse response = httpClient.execute(post)) {
             result = EntityUtils.toString(response.getEntity());
             code = response.getStatusLine().getStatusCode();
+          }catch (Exception e ){
+              System.out.println("Exception in closeableclient");
           }
         } catch (UnsupportedEncodingException e) {
           e.printStackTrace();
           resultList.add(0, "REQUEST_ERROR");
           resultList.add(1, "Error enviando peticion a Google Safe Browsing");
-          return CompletableFuture.completedFuture(resultList);
+            System.out.println("Request error");
+            return CompletableFuture.completedFuture(resultList);
         }
         JsonReader jsonReader = Json.createReader(new StringReader(result));
         JsonObject jsonObject = jsonReader.readObject();
         jsonReader.close();
-    
+
         if (code != 200) {
           resultList.add(0, "REQUEST_ERROR");
           resultList.add(1, "Google Safe Browsing ha devuelto statuscode " + code);
-          return CompletableFuture.completedFuture(resultList);
+            return CompletableFuture.completedFuture(resultList);
         }
     
         // Not a threat
         if (jsonObject.isEmpty()) {
           resultList.add("SAFE");
-          return CompletableFuture.completedFuture(resultList);
         } else {
     
           // A threat
@@ -87,11 +90,10 @@ public class SafeCheckService {
             resultList.add(0, "UNSAFE");
             resultList.add(1, "URL marcada por Google Safe Browsing como  " + currentThreatType);
           }
-    
-          return CompletableFuture.completedFuture(resultList);
+
         }
-    
-      }
+        return CompletableFuture.completedFuture(resultList);
+    }
     
       private static String buildPayload(List<String> urls) {
     
