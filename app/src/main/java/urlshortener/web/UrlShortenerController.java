@@ -129,6 +129,7 @@ public class UrlShortenerController {
       } catch (Exception e) {
         status = HttpStatus.PARTIAL_CONTENT;
       }
+
       safeBrowsingCheck(su, url);
 
       return new ResponseEntity<>(su, h, status);
@@ -239,7 +240,6 @@ public class UrlShortenerController {
   }
 
   public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService, ShortURLService shortUrlService) {
-
     try {
       safeCheckService.safeBrowsingChecker(url).thenAcceptAsync((result) -> {
 
@@ -248,11 +248,15 @@ public class UrlShortenerController {
         } else {
           shortUrlService.updateShortUrl(su, su.getUri(), false, result.get(1));
         }
+      }).exceptionally (e -> {
+        shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
+        return null;
       });
-    } catch (Exception e) {
+    } catch (IOException e) {
       shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
-      System.out.println("Exception in thread");
+      e.printStackTrace();
     }
+
   }
 
   /**

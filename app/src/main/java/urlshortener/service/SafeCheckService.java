@@ -34,7 +34,7 @@ public class SafeCheckService {
 
     static public Logger logger = LoggerFactory.getLogger(SafeCheckService.class);
     @Value("${secret_key}")
-  private String SECRET_GOOGLE_SAFE_BROWSING_KEY;
+    private String SECRET_GOOGLE_SAFE_BROWSING_KEY;
 
     @Async("asyncWorker")
     public CompletableFuture<List<String>> safeBrowsingChecker(String url) throws IOException {
