@@ -1,6 +1,10 @@
 package urlshortener.web;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.FileReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -39,10 +43,23 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import static urlshortener.eip.Router.QR_URI;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
+
+import java.io.UnsupportedEncodingException;
+import org.apache.commons.validator.routines.InetAddressValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.net.URLEncoder;
 
 @RestController
 public class UrlShortenerController {
+
+  private static final Logger log = LoggerFactory
+  .getLogger(UrlShortenerController.class);
 
   private final ShortURLService shortUrlService;
 
@@ -138,18 +155,39 @@ public class UrlShortenerController {
     if (defaultFormat.equals(format) || format == null) {
       QR q = qrService.findByHash(hash); //Try to find if QR was already generated
       ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
-      if (su != null) {
-        clickService.saveClick(hash, extractIP(request));
-        shortUrlService.updateShortUrl(su, new URI(extractIP(request) + "/" + su.getHash()), su.getSafe(), su.getDescription());
-        if (q == null) { //if QR was never generated
-          return producerTemplate.requestBody(QR_URI, hash, ResponseEntity.class);
-        } else {
-          HttpHeaders h = new HttpHeaders();
-          h.add("hash", hash);
-          h.setLocation(q.getUri());
-          h.setCacheControl(cacheConfig());
-          return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
+      try{
+        if (su != null) {
+          shortUrlService.updateShortUrl(su, new URI(extractLocalAddress(request) + "/" + su.getHash()), su.getSafe(),
+              su.getDescription());
+          if (q == null) { //if QR was never generated
+            
+                
+            Exchange exchange = producerTemplate.send(QR_URI, new Processor() {
+              public void process(Exchange exchange) throws Exception {
+                exchange.getIn().setBody(extractLocalAddress(request));
+                exchange.getIn().setHeader("hash", su.getHash());
+              }
+            });
+            Message out = exchange.getOut();
+            int responseCode = out.getHeader(Exchange.HTTP_RESPONSE_CODE, int.class);
+            if(responseCode == HttpStatus.ACCEPTED.value()){
+                return new ResponseEntity<>(out.getBody(byte[].class), HttpStatus.ACCEPTED);
+            }
+            else{
+              return new ResponseEntity<>(out.getBody(), HttpStatus.resolve(responseCode));
+            }
+          }
+          else {
+            HttpHeaders h = new HttpHeaders();
+            h.add("hash", hash);
+            h.setLocation(q.getUri());
+            h.setCacheControl(cacheConfig());
+            return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
+          }
         }
+      }
+      catch(Exception e){
+        return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
     return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
@@ -161,7 +199,7 @@ public class UrlShortenerController {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
 
     try {
-      System.out.println("Received type " + urls.getContentType());
+      log.info("Received type " + urls.getContentType());
       BufferedReader br;
 
       List<String> urlsList = new ArrayList<>();
@@ -221,9 +259,16 @@ public class UrlShortenerController {
       return new ResponseEntity<>(resultString, headers, HttpStatus.CREATED);
 
     } catch (Exception e) {
-      System.out.println("Exception  " + e.toString());
+      log.error("Exception  " + e.toString());
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @RequestMapping(value = "/failure", method = RequestMethod.GET)
+  public ResponseEntity<?> failure(/*@RequestParam("body") String body,*/
+      HttpServletRequest request) {
+      log.error("Failure: "/* + body*/);
+      return new ResponseEntity<>(/*body*/ "shit", HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   public void safeBrowsingCheck(ShortURL su, String url){
@@ -237,7 +282,7 @@ public class UrlShortenerController {
       });
     } catch (Exception e) {
       shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
-      System.out.println("Exception in thread");
+      log.error("Exception in thread");
     }
   }
 
@@ -262,13 +307,23 @@ public class UrlShortenerController {
     }
     catch(Exception e) {
       e.getStackTrace();
-      System.out.print(e);
+      log.error(e.toString());
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
   }
 
   private String extractIP(HttpServletRequest request) {
     return request.getRemoteAddr();
+  }
+
+  private String extractLocalAddress(HttpServletRequest request) throws UnsupportedEncodingException{
+    InetAddressValidator validator = InetAddressValidator.getInstance();
+    String address = request.getLocalAddr();
+    if (validator.isValidInet6Address(address)){
+      address = "[" + address + "]";
+    }
+    return URLEncoder.encode("http://" + address + ":" + request.getLocalPort(), "UTF-8");
+    
   }
 
   /**
@@ -285,7 +340,7 @@ public class UrlShortenerController {
       // System.out.println("Status request: " + httpURLConn.getResponseCode())
       return httpURLConn.getResponseCode() == HttpURLConnection.HTTP_OK;
     } catch (Exception e) {
-      System.out.println("Error: " + e.getMessage());
+      log.error("Error: " + e.getMessage());
       return false;
     }
   }
