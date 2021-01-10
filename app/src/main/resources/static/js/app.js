@@ -17,7 +17,7 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
             data: {
                 "url": introducedUrl
             },
-            success: function (msg) {
+            success: function(msg) {
                 shortenedHash = msg.hash;
                 $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing... ⏳");
                 $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
@@ -57,25 +57,20 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
                 processData: false,
                 enctype: 'multipart/form-data',
                 contentType: false,
-                success: function(csvContent, status, response) {
+                success: function(csvContent, status, xhr) {
 
                     $("#safeBrowsingCheck").text("Verificando y acordando urls... ⏳");
                     $("#notifyShortening").text("Success shortening");
 
-
                     var encodedUri = encodeURI(csvContent);
                     var link = document.createElement("a");
                     link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", "Short-urls.csv");
+                    var filename = xhr.getResponseHeader('Content-Disposition').split("filename=")[1];
+                    filename = filename.replace(/['"]+/g, '')
+                    link.setAttribute("download", filename);
                     document.body.appendChild(link);
-                    if (confirm('¿Quieres descargar el CSV con las urls acortadas?')) {
-                        link.click();
-                        $("#notifyShortening").text("Archivo descargado ✅");
-
-                    } else {
-                        $("#notifyShortening").text("Operación calcelada ❌");
-                    }
-
+                    link.click();
+                    $("#notifyShortening").text("Archivo descargado ✅");
 
                 },
                 error: function(output, status, xhr) {
@@ -85,30 +80,30 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
                 }
             });;
         }
-
-
-        reader.readAsText(csvFile);
+        // reader.readAsText(csvFile);
 
     });
 
-    $("#qrButton").click(function (event) {
+    $("#qrButton").click(function(event) {
         var xhr = new XMLHttpRequest();
-        xhr.open('get',`${document.URL}/qr/${shortenedHash}`)
-           xhr.onload = function(){
-               var img = new Image();
-               var response = xhr.responseText;
-               var binary = new Uint8Array(response.length);
-               
-               for(var i=0;i<response.length;i++){
-                   binary[i] = response.charCodeAt(i) & 0xff;
-               }
-               
-               img.src = URL.createObjectURL(new Blob([binary.buffer]));
-               document.body.appendChild(img)
-   
-           }
-           xhr.overrideMimeType('text/plain; charset=x-user-defined');
-           xhr.send();
+        xhr.open('get', `${
+            document.URL
+        }/qr/${shortenedHash}`)
+        xhr.onload = function() {
+            var img = new Image();
+            var response = xhr.responseText;
+            var binary = new Uint8Array(response.length);
+
+            for (var i = 0; i < response.length; i++) {
+                binary[i] = response.charCodeAt(i) & 0xff;
+            }
+
+            img.src = URL.createObjectURL(new Blob([binary.buffer]));
+            document.body.appendChild(img)
+
+        }
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+        xhr.send();
     });
 
     function _arrayBufferToBase64(rawData) {

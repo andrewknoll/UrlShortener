@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.json.Json;
@@ -18,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
 import org.apache.http.client.ClientProtocolException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -78,15 +80,14 @@ public class UrlShortenerController {
     if (l != null) {
       // If not safe return bad request
       String finalURL = l.getTarget();
-      System.out.println("Uri is safe " + l.getSafe().toString() );
+      System.out.println("Uri is safe " + l.getSafe().toString());
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
         return redirectThroughSponsor();
-      } else if (!l.getSafe()){
+      } else if (!l.getSafe()) {
         String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
-      }
-      else {
+      } else {
         String json = Json.createObjectBuilder().add("error", "URI not reachable").build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
       }
@@ -98,14 +99,13 @@ public class UrlShortenerController {
   /**
    * We can recover final URI (in JSON format) from hash thanks to this GET method
    */
-  @RequestMapping(value= "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET, produces = "application/json")
-  public ResponseEntity<?>getFinalURI(@PathVariable String hash, HttpServletRequest request){
+  @RequestMapping(value = "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET, produces = "application/json")
+  public ResponseEntity<?> getFinalURI(@PathVariable String hash, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(hash);
     if (l != null) {
       String json = Json.createObjectBuilder().add("URI", l.getTarget()).build().toString();
       return new ResponseEntity<>(json, HttpStatus.ACCEPTED);
-    }
-    else {
+    } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
   }
@@ -145,12 +145,13 @@ public class UrlShortenerController {
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {
-      QR q = qrService.findByHash(hash); //Try to find if QR was already generated
-      ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
+      QR q = qrService.findByHash(hash); // Try to find if QR was already generated
+      ShortURL su = shortUrlService.findByKey(hash); // Try to find ShortUrl
       if (su != null) {
         clickService.saveClick(hash, extractIP(request));
-        shortUrlService.updateShortUrl(su, new URI(extractIP(request) + "/" + su.getHash()), su.getSafe(), su.getDescription());
-        if (q == null) { //if QR was never generated
+        shortUrlService.updateShortUrl(su, new URI(extractIP(request) + "/" + su.getHash()), su.getSafe(),
+            su.getDescription());
+        if (q == null) { // if QR was never generated
           return producerTemplate.requestBody(QR_URI, hash, ResponseEntity.class);
         } else {
           HttpHeaders h = new HttpHeaders();
@@ -170,19 +171,23 @@ public class UrlShortenerController {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
 
     try {
-      System.out.println("Received type " + urls.getContentType());
+      // Local varables
       BufferedReader br;
-
       List<String> urlsList = new ArrayList<>();
       List<String> problems = new ArrayList<>();
-
-      String line;
+      List<String> resultList = new ArrayList<>();
+      String resultString;
+      ShortURL firstSu = new ShortURL();
       InputStream is = urls.getInputStream();
+
+      // Save received CSV urls
       br = new BufferedReader(new InputStreamReader(is));
-      while ((line = br.readLine()) != null) {
-        urlsList.add(line);
+      while ((resultString = br.readLine()) != null) {
+        urlsList.add(resultString);
       }
+
       // Check if all urls are valid and safe
+      // Otherwise save the problem
       for (int i = 0; i < urlsList.size(); i++) {
         if (!urlValidator.isValid(urlsList.get(i))) {
           problems.add(i, "debe ser una URI http o https");
@@ -191,70 +196,64 @@ public class UrlShortenerController {
         }
       }
 
-      List<String> resultList = new ArrayList<>();
-      ShortURL firstSu = new ShortURL();
-
+      // Save shortened urls only if there wasn't a problem with them
       for (int i = 0; i < urlsList.size(); i++) {
         if (problems.get(i).isEmpty()) {
           ShortURL su = shortUrlService.save(urlsList.get(i), "", request.getRemoteAddr(), false);
+          resultList.add(su.getUri().toString());
+
           // Save the first URL
           if (resultList.size() == 1) {
             firstSu = su;
           }
-          resultList.add(su.getUri().toString());
-
-
-
-          // Async process to check if URLs are safe
+          // Async process to check if the URLs are safe against Google Safe Browsing
           safeBrowsingCheck(su, su.getTarget());
-
         } else {
           resultList.add("");
         }
-
       }
 
-      // FileWriter fileWriter = new FileWriter("csvResponse.csv");
-      String resultString = "data:text/csv;charset=utf-8,";
-
+      // Create response string
+      resultString = "data:text/csv;charset=utf-8,";
       for (int i = 0; i < resultList.size(); i++) {
         resultString = resultString + (urlsList.get(i) + ',' + resultList.get(i) + "," + problems.get(i) + "\n");
       }
 
+      // Set response headers
       HttpHeaders responseHeaders = new HttpHeaders();
+      ContentDisposition cd = ContentDisposition.builder("attachment").filename("Short-urls.csv").build();
       responseHeaders.setLocation(firstSu.getUri());
-
-      MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-      headers.add("Location", resultList.get(0));
-//TODO:Header que descarga automáticamente (ContentDisposition)
-      return new ResponseEntity<>(resultString, headers, HttpStatus.CREATED);
+      responseHeaders.setContentDisposition(cd);
+      return new ResponseEntity<>(resultString, responseHeaders, HttpStatus.CREATED);
 
     } catch (Exception e) {
-      System.out.println("Exception  " + e.toString());
+      // System.out.println("Exception " + e.toString());
+      // e.printStackTrace();
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  public void safeBrowsingCheck(ShortURL su, String url){
+  public void safeBrowsingCheck(ShortURL su, String url) {
     googleSafeBrowsing(su, url, safeCheckService, shortUrlService);
   }
 
-  public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService, ShortURLService shortUrlService) {
+  public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService,
+      ShortURLService shortUrlService) {
     try {
+      // Async process call for verification
       safeCheckService.safeBrowsingChecker(url).thenAcceptAsync((result) -> {
-
+        // Update database
         if (result.get(0).equals("SAFE")) {
           shortUrlService.updateShortUrl(su, su.getUri(), true, "");
         } else {
           shortUrlService.updateShortUrl(su, su.getUri(), false, result.get(1));
         }
-      }).exceptionally (e -> {
+      }).exceptionally(e -> {
         shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
         return null;
       });
-    } catch (IOException e) {
+    } catch (Exception e) {
       shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
-      e.printStackTrace();
     }
 
   }
@@ -267,12 +266,11 @@ public class UrlShortenerController {
       // Reading HTML file
       File resource = sponsorResource.getFile();
       // Data = html string
-      String data = new String(
-              Files.readAllBytes(resource.toPath()));
+      String data = new String(Files.readAllBytes(resource.toPath()));
       // Shows sponsor.html page without changing location
       return new ResponseEntity<>(data, HttpStatus.TEMPORARY_REDIRECT);
 
-    }catch (IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
@@ -301,7 +299,7 @@ public class UrlShortenerController {
       return false;
     }
   }
-  
+
   private ResponseEntity<?> error(String message, HttpStatus status) {
     HashMap<String, String> map = new HashMap<>();
     map.put("error", message);
