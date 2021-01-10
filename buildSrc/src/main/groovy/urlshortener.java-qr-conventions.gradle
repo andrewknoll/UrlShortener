@@ -1,5 +1,0 @@
-plugins {
-    id 'urlshortener.java-common-conventions' 
-
-    id 'application' 
-}

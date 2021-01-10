@@ -123,8 +123,7 @@ public class UrlShortenerTests {
 
     mockMvc.perform(post("/link").param("url", "someKey")).andDo(print()).andExpect(status().isBadRequest());
   }
-  
-  @Ignore
+
   @Test
   public void thatShortenerCreatesAQRIfTheHashisStored() throws Exception {
 
