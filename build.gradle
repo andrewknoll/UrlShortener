@@ -8,6 +8,12 @@ ext {
     set('springCloudVersion', "Hoxton.SR8")
 }
 
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url "https://jitpack.io" }
+}
+
 subprojects {
 
     apply plugin: 'java'
@@ -37,11 +43,7 @@ subprojects {
         testImplementation 'org.apache.httpcomponents:httpclient'
     }
 
-    repositories {
-        jcenter()
-        mavenCentral()
-        maven { url "https://jitpack.io" }
-    }
+
 
     dependencyManagement {
         imports {
