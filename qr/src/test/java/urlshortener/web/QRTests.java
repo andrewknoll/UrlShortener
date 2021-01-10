@@ -12,6 +12,7 @@ import static urlshortener.fixtures.QRFixture.qr1;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -66,12 +67,12 @@ public class QRTests {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     QRCode.from("http://localhost/f684a3c4").writeTo(oos);
 
-    mockMvc.perform(get("/qr/{hash}", "f684a3c4")).andDo(print()).andExpect(status().isAccepted())
+    mockMvc.perform(get("/qr?origin=localhost&hash={hash}", "f684a3c4")).andDo(print()).andExpect(status().isAccepted())
         .andExpect(content().bytes(oos.toByteArray()));
   }
 
-  private void configureSaveQR() throws InterruptedException, ExecutionException{
-    when(qrService.createQR(any()))
+  private void configureSaveQR() throws InterruptedException, ExecutionException, URISyntaxException{
+    when(qrService.createQR(any(), any()))
         .then((Answer<CompletableFuture<QR>>) invocation -> 
         CompletableFuture.completedFuture(new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR())));
   }
