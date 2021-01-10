@@ -149,7 +149,7 @@ public class UrlShortenerController {
 
   }
 
-  @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET)
+  @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {

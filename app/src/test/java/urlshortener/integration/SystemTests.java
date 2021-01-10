@@ -136,7 +136,7 @@ public class SystemTests {
   }
 
   @Test
-  public void testRedirection() throws Exception {
+  public void testRedirectionToSponsor() throws Exception {
     ResponseEntity<String> entityURL = postLink("http://example.com/");
     int tries = 0;
     while (tries < MAX_TRIES && JsonPath.parse(entityURL.getBody()).read("$.safe").toString().equals("false")) {

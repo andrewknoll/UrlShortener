@@ -1,13 +1,11 @@
-plugins {
-    id 'urlshortener.java-application-conventions'
-}
-
-
 dependencies {
     compile 'com.github.kenglxn.QRGen:javase:2.6.0'
     compile("org.apache.camel.springboot:camel-spring-boot-starter:3.6.0")
     compile("org.apache.camel.springboot:camel-http-starter:3.6.0")
     compile("org.apache.camel.springboot:camel-jackson-starter:3.6.0")
+
+    testCompile("org.mock-server:mockserver-client-java:3.10.8")
+    testCompile("org.mock-server:mockserver-netty:3.10.8")
 }
 
 clean.doFirst {
