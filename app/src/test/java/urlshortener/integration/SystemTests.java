@@ -14,8 +14,6 @@ import com.jayway.jsonpath.ReadContext;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,8 +31,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import net.glxn.qrgen.javase.QRCode;
-import urlshortener.service.SafeCheckService;
-import urlshortener.service.ShortURLService;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -151,31 +147,56 @@ public class SystemTests {
   }
 
   // The test fails if the google safe browsing secret key isn't hardcoded into de
-  // function
-  @Ignore
+  // safeBrowsingChecker function in SafeCheckService
   @Test
   public void testGoogleSafeBrowsingCheck() throws Exception {
 
-    SafeCheckService safeCheckService = new SafeCheckService();
-    CompletableFuture<List<String>> results = safeCheckService.safeBrowsingChecker("https://github.com/TheRealFreeman");
+    // Safe URL
+    ResponseEntity<String> entity = postLink("https://google.com/");
 
+    ReadContext rc = JsonPath.parse(entity.getBody());
+    String safeUrlHash = rc.read("$.hash");
+
+    ResponseEntity<String> safeRE = restTemplate.getForEntity("/" + safeUrlHash, String.class);
+    rc = JsonPath.parse(safeRE.getBody());
+    String error = rc.read("$.error");
+
+    // Tries to query the endpoint 10 times until it is verified
     int tries = 0;
-    while (tries < MAX_TRIES && results == null) {
+    while (tries < MAX_TRIES && error.equals("Aun no verificada")) {
       Thread.sleep(1000);
+      safeRE = restTemplate.getForEntity("/" + safeUrlHash, String.class);
+      if (safeRE.getStatusCode().equals(HttpStatus.TEMPORARY_REDIRECT))
+        break;
+      rc = JsonPath.parse(safeRE.getBody());
+      error = rc.read("$.error");
       tries++;
     }
-    assertThat(results.get().get(0), is("SAFE"));
-    results = null;
-    results = safeCheckService.safeBrowsingChecker(
-        "https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-dot-offgl8876899977678.uk.r.appspot.com/xxx");
+    assertThat(safeRE.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
 
+    // Unsafe URL
+    ResponseEntity<String> unsafeEntity = postLink(
+        "https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-dot-offgl8876899977678.uk.r.appspot.com/xxx");
+    rc = JsonPath.parse(unsafeEntity.getBody());
+    String unsafeUrlHash = rc.read("$.hash");
+
+    ResponseEntity<String> unsafeRE = restTemplate.getForEntity("/" + unsafeUrlHash, String.class);
+    rc = JsonPath.parse(unsafeRE.getBody());
+    error = rc.read("$.error");
+
+    // Tries to query the endpoint until google safe browsing confirms it is not
+    // safe
     tries = 0;
-    while (tries < MAX_TRIES && results == null) {
+    while (tries < MAX_TRIES && error.equals("Aun no verificada")) {
       Thread.sleep(1000);
+      unsafeRE = restTemplate.getForEntity("/" + unsafeUrlHash, String.class);
+      rc = JsonPath.parse(unsafeRE.getBody());
+      error = rc.read("$.error");
       tries++;
     }
-    assertThat(results.get().get(0), is("UNSAFE"));
-    assertThat(results.get().get(1), is("URL marcada por Google Safe Browsing como SOCIAL_ENGINEERING"));
+
+    assertThat(unsafeRE.getStatusCode(), is(HttpStatus.BAD_REQUEST));
+    assertThat(rc.read("$.error"), is("URL marcada por Google Safe Browsing como SOCIAL_ENGINEERING"));
 
   }
 
