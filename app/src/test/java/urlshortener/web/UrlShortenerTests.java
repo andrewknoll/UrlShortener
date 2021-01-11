@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -14,11 +15,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static urlshortener.fixtures.QRFixture.qr1;
+import static urlshortener.fixtures.ShortURLFixture.someUnsafeUrl;
 import static urlshortener.fixtures.ShortURLFixture.someUrl;
 import static urlshortener.fixtures.ShortURLFixture.url1;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -39,6 +42,7 @@ import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
 import urlshortener.service.QRService;
+import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
 
 public class UrlShortenerTests {
@@ -50,6 +54,9 @@ public class UrlShortenerTests {
 
   @Mock
   private ShortURLService shortUrlService;
+
+  @Mock
+  private SafeCheckService safeCheckService;
 
   @Mock
   private QRService qrService;
@@ -172,6 +179,13 @@ public class UrlShortenerTests {
     mockMvc.perform(MockMvcRequestBuilders.multipart("/multipleLinks").file(csvFile)).andDo(print())
         .andExpect(status().isCreated()).andExpect(header().string("Location", is("http://localhost/f684a3c4")))
         .andExpect(header().string("Content-Type", "text/csv;charset=ISO-8859-1"));
+  }
+
+  @Test
+  public void doesNotREdirectIfURLNotSafe() throws Exception {
+    when(shortUrlService.findByKey(anyString())).thenReturn(someUnsafeUrl());
+
+    mockMvc.perform(get("/{id}", "someKey")).andDo(print()).andExpect(status().isBadRequest());
   }
 
   private void configureSave(String sponsor, URI qrUri) {

@@ -233,10 +233,23 @@ public class UrlShortenerController {
     }
   }
 
+  /**
+   * 
+   * @param su  ShortURL that will be updated once checked
+   * @param url url to verify
+   */
   public void safeBrowsingCheck(ShortURL su, String url) {
     googleSafeBrowsing(su, url, safeCheckService, shortUrlService);
   }
 
+  /**
+   * 
+   * @param su               short url that will be updated once checked
+   * @param url              url to verify
+   * @param safeCheckService service to contact with google safe browsing to
+   *                         perform the sheck
+   * @param shortUrlService  service to update the ShortURL
+   */
   public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService,
       ShortURLService shortUrlService) {
     try {
@@ -261,7 +274,7 @@ public class UrlShortenerController {
   /**
    * Function that shows sponsor.html page before redirecting to final URI
    */
-  private ResponseEntity<?> redirectThroughSponsor() {
+  ResponseEntity<?> redirectThroughSponsor() {
     try {
       // Reading HTML file
       File resource = sponsorResource.getFile();

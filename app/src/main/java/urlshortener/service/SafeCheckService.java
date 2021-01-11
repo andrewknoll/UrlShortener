@@ -91,7 +91,7 @@ public class SafeCheckService {
       for (int i = 0; i < threats.size(); i++) {
         String currentThreatType = threats.getJsonObject(i).getString("threatType");
         resultList.add(0, "UNSAFE");
-        resultList.add(1, "URL marcada por Google Safe Browsing como  " + currentThreatType);
+        resultList.add(1, "URL marcada por Google Safe Browsing como " + currentThreatType);
       }
 
     }
