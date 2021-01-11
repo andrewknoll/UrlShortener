@@ -173,7 +173,7 @@ public class UrlShortenerController {
           HttpHeaders h = new HttpHeaders();
           h.add("hash", hash);
           h.setLocation(q.getUri());
-          h.setCacheControl(cacheConfig());
+          h.setCacheControl(cacheConfig(10));
           return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
         }
       }
@@ -335,7 +335,7 @@ public class UrlShortenerController {
     return new ResponseEntity<>(map, status);
   }
 
-  private CacheControl cacheConfig() {
-    return CacheControl.maxAge(10, TimeUnit.DAYS).cachePublic();
+  private CacheControl cacheConfig(int maxAge) {
+    return CacheControl.maxAge(maxAge, TimeUnit.DAYS).cachePublic();
   }
 }
