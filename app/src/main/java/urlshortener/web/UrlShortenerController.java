@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
@@ -41,6 +42,8 @@ import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
 
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static urlshortener.eip.Router.QR_URI;
@@ -97,17 +100,30 @@ public class UrlShortenerController {
   }
 
   /**
-   * We can recover final URI (in JSON format) from hash thanks to this GET method
+   *
+   * @param hash ShortURL id
+   * @return Server Sent Events Emitter that is going to send finalURI after 5 seconds to redirect
    */
-  @RequestMapping(value = "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET, produces = "application/json")
-  public ResponseEntity<?> getFinalURI(@PathVariable String hash, HttpServletRequest request) {
+  @RequestMapping(value = "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET)
+  public SseEmitter getFinalURI(@PathVariable String hash) {
+    long sleepingTimeMS = 5000;
+    SseEmitter emitter = new SseEmitter();
+
+    String URI = "";
     ShortURL l = shortUrlService.findByKey(hash);
-    if (l != null) {
-      String json = Json.createObjectBuilder().add("URI", l.getTarget()).build().toString();
-      return new ResponseEntity<>(json, HttpStatus.ACCEPTED);
-    } else {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    if (l != null){
+      URI = l.getTarget();
     }
+    String finalURI = URI;
+
+    try{
+      Thread.sleep(sleepingTimeMS);
+      emitter.send(finalURI);
+    }
+    catch (Exception e) {
+      emitter.completeWithError(e);
+    }
+    return emitter;
   }
 
   @RequestMapping(value = "/link", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
