@@ -86,7 +86,7 @@ public class UrlShortenerController {
         return redirectThroughSponsor();
       } else if (!l.getSafe()) {
         String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
-        return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(json, HttpStatus.FORBIDDEN);
       } else {
         String json = Json.createObjectBuilder().add("error", "URI not reachable").build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
