@@ -290,14 +290,16 @@ public class UrlShortenerController {
   /**
    * Function that shows sponsor.html page before redirecting to final URI
    */
-  ResponseEntity<?> redirectThroughSponsor() {
+  private ResponseEntity<?> redirectThroughSponsor() {
     try {
       // Reading HTML file
       File resource = sponsorResource.getFile();
       // Data = html string
       String data = new String(Files.readAllBytes(resource.toPath()));
       // Shows sponsor.html page without changing location
-      return new ResponseEntity<>(data, HttpStatus.TEMPORARY_REDIRECT);
+      HttpHeaders h = new HttpHeaders();
+      h.setCacheControl(cacheConfig(1));
+      return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
 
     } catch (IOException e) {
       e.printStackTrace();
