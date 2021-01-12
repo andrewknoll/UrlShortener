@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,16 +14,21 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,12 +50,16 @@ public class SystemTests {
   @LocalServerPort
   private int port;
 
+  @Value("classpath:testUrls.csv")
+  Resource testCSVFile;
+
   private final int MAX_TRIES = 10;
 
   public static byte[] toByteArray(QRCode qr) {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     qr.writeTo(oos);
     return oos.toByteArray();
+
   }
 
   @Test
@@ -158,13 +168,14 @@ public class SystemTests {
 
     ResponseEntity<String> safeRE = restTemplate.getForEntity("/" + safeUrlHash, String.class);
 
-    // Tries to query the endpoint 10 times until it is verified
+    // Tries to query the endpoint 10 times or until it is verified
     int tries = 0;
     while (tries < MAX_TRIES && safeRE.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
       Thread.sleep(1000);
       safeRE = restTemplate.getForEntity("/" + safeUrlHash, String.class);
       tries++;
     }
+    // Checks redirection occured after safety was verified
     assertThat(safeRE.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
 
     // Unsafe URL
@@ -187,9 +198,42 @@ public class SystemTests {
       error = rc.read("$.error");
       tries++;
     }
-
+    // Checks the url is marked as unsafe and therefore isn't redirected
     assertThat(rc.read("$.error"), is("URL marcada por Google Safe Browsing como SOCIAL_ENGINEERING"));
     assertThat(unsafeRE.getStatusCode(), is(HttpStatus.FORBIDDEN));
+
+  }
+
+  @Test
+  public void checkCSVFunctionality() throws IOException {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+    // Reading CSV file
+    FileSystemResource csvFileResource = new FileSystemResource(testCSVFile.getFile());
+    MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+    body.add("urls", csvFileResource);
+    HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
+    ResponseEntity<String> response = restTemplate.postForEntity("/multipleLinks", entity, String.class);
+
+    String responseBody = response.getBody();
+    responseBody = responseBody.replace("data:text/csv;charset=utf-8,", "");
+    String[] lines = responseBody.split("\n");
+    String[] firstLine = lines[0].split(",");
+    String[] lastLine = lines[4].split(",");
+
+    // Should receive a csv file with 5 lines
+    assertEquals(lines.length, 5);
+    // First line containing the original URL of the original CSV file
+    assertEquals(firstLine[0], "https://developer.mozilla.org/en-US/docs/Web/API/FileReader");
+    // Since it is a valid URL, there shouldn't be any problems
+    assertEquals(firstLine.length, 2);
+    // Last URL isn't valid and therefore should have some information notifying it
+    assertEquals(lastLine.length, 3);
+    assertEquals(lastLine[2], "debe ser una URI http o https");
+    // Statuscode should be 201
+    assertThat(response.getStatusCode(), is(HttpStatus.CREATED));
+    // Location header should cointain the short url of the first shortened url
+    assertEquals(response.getHeaders().getLocation().toString(), firstLine[1]);
 
   }
 

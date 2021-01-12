@@ -184,7 +184,7 @@ public class UrlShortenerTests {
   public void doesNotRedirectIfURLNotValidated() throws Exception {
     when(shortUrlService.findByKey(anyString())).thenReturn(someUnsafeUrl());
 
-    mockMvc.perform(get("/{id}", "someKey")).andDo(print()).andExpect(status().isBadRequest())
+    mockMvc.perform(get("/{id}", "someKey")).andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error", is("URL aun no validada")));
   }
 
