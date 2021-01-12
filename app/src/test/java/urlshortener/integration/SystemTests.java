@@ -19,6 +19,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
@@ -32,8 +33,8 @@ import org.springframework.util.MultiValueMap;
 
 import net.glxn.qrgen.javase.QRCode;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
+@RunWith(SpringRunner.class)
 @DirtiesContext
 public class SystemTests {
 
@@ -146,9 +147,6 @@ public class SystemTests {
     assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));
   }
 
-  // The test fails if the google safe browsing secret key isn't hardcoded into de
-  // safeBrowsingChecker function in SafeCheckService
-  @Ignore
   @Test
   public void testGoogleSafeBrowsingCheck() throws Exception {
 
