@@ -8,6 +8,7 @@ import urlshortener.domain.ShortURL;
 import urlshortener.repository.ShortURLRepository;
 import urlshortener.web.UrlShortenerController;
 import java.net.URI;
+import java.util.List;
 
 @Service
 public class ShortURLService {
@@ -20,6 +21,10 @@ public class ShortURLService {
 
   public ShortURL findByKey(String id) {
     return shortURLRepository.findByKey(id);
+  }
+
+  public List<ShortURL> findByTarget(String url){
+      return shortURLRepository.findByTarget(url);
   }
 
   public ShortURL save(String url, String sponsor, String ip, boolean qrWasGenerated) {

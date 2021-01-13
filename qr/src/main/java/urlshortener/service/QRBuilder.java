@@ -29,8 +29,8 @@ public class QRBuilder {
     return this;
   }
 
-  QRBuilder uri(Function<String, URI> extractor) {
-    this.uri = extractor.apply(hash);
+  QRBuilder uri(URI uri) {
+    this.uri = uri;
     return this;
   }
 

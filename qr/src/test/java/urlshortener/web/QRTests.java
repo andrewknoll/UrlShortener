@@ -30,7 +30,6 @@ import net.glxn.qrgen.javase.QRCode;
 import urlshortener.domain.QR;
 import urlshortener.service.QRService;
 
-@Ignore
 public class QRTests {
 
   private MockMvc mockMvc;
@@ -46,35 +45,26 @@ public class QRTests {
     MockitoAnnotations.initMocks(this);
     this.mockMvc = MockMvcBuilders.standaloneSetup(qrcontroller).build();
   }
+
   @Test
-  public void thatControllerCreatesAQRIfTheHashisStored() throws Exception {
+  public void thatControllerCreatesACorrectQR() throws Exception {
 
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
-    QRCode.from("http://localhost/f684a3c4").writeTo(oos);
+    QRCode.from("something/f684a3c4").writeTo(oos);
 
     configureSaveQR();
 
-    mockMvc.perform(get("/qr/{hash}.{format}", "f684a3c4", "png")).andDo(print()).andExpect(status().isAccepted())
+    mockMvc.perform(get("/qr").param("origin", "something/f684a3c4").param(
+            "hash", "f684a3c4")).andDo(print()).andExpect(status().isAccepted())
         .andExpect(header().string("hash", is("f684a3c4")))
-        .andExpect(header().string("Location", is("http://localhost/f684a3c4")))
-        .andExpect(content().bytes(oos.toByteArray()));
-  }
-  
-  @Test
-  public void thatRetrieveQRCodeByHashReturnsAcceptedIfKeyExists()
-      throws Exception {
-
-    ByteArrayOutputStream oos = new ByteArrayOutputStream();
-    QRCode.from("http://localhost/f684a3c4").writeTo(oos);
-
-    mockMvc.perform(get("/qr?origin=localhost&hash={hash}", "f684a3c4")).andDo(print()).andExpect(status().isAccepted())
+        .andExpect(header().string("Location", is("something/f684a3c4")))
         .andExpect(content().bytes(oos.toByteArray()));
   }
 
   private void configureSaveQR() throws InterruptedException, ExecutionException, URISyntaxException{
     when(qrService.createQR(any(), any()))
         .then((Answer<CompletableFuture<QR>>) invocation -> 
-        CompletableFuture.completedFuture(new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR())));
+        CompletableFuture.completedFuture(new QR("f684a3c4", URI.create("something/f684a3c4"), qr1().getQR())));
   }
 
 }

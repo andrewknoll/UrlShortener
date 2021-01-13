@@ -8,11 +8,21 @@ ext {
     set('springCloudVersion', "Hoxton.SR8")
 }
 
-repositories {
-    jcenter()
-    mavenCentral()
-    maven { url "https://jitpack.io" }
+springBoot {
+    mainClassName = 'urlshortener.Application'
 }
+
+allprojects {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+    }
+    wrapper {
+        gradleVersion = '6.6.1'
+    }
+}
+
 
 subprojects {
 
@@ -39,6 +49,7 @@ subprojects {
 
         compile 'org.hsqldb:hsqldb'
 
+        testCompile group: 'junit', name: 'junit', version: '4.+'
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.apache.httpcomponents:httpclient'
     }
@@ -53,4 +64,10 @@ subprojects {
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
+}
+
+task testReport(type: TestReport) {
+    destinationDir = file("$buildDir/reports/allTests")
+    // Include the results from the `test` task in all subprojects
+    reportOn subprojects*.test
 }
