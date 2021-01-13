@@ -37,6 +37,7 @@ import urlshortener.service.ClickService;
 import urlshortener.service.QRService;
 import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
+import urlshortener.repository.impl.SponsorCache;
 
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
@@ -146,7 +147,7 @@ public class UrlShortenerController {
       return new ResponseEntity<>(su, h, status);
 
     } else {
-      String json = Json.createObjectBuilder().add("error", "debe ser una URI http o https").build().toString();
+      String json = Json.createObjectBuilder().add("error", "Debe ser una URI http o https").build().toString();
       return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
     }
 
@@ -182,7 +183,7 @@ public class UrlShortenerController {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
 
     try {
-      // Local varables
+      // Local variables
       BufferedReader br;
       List<String> urlsList = new ArrayList<>();
       List<String> problems = new ArrayList<>();
@@ -258,7 +259,7 @@ public class UrlShortenerController {
    * @param su               short url that will be updated once checked
    * @param url              url to verify
    * @param safeCheckService service to contact with google safe browsing to
-   *                         perform the sheck
+   *                         perform the check
    * @param shortUrlService  service to update the ShortURL
    */
   public static void googleSafeBrowsing(ShortURL su, String url, SafeCheckService safeCheckService,
@@ -290,7 +291,11 @@ public class UrlShortenerController {
       // Reading HTML file
       File resource = sponsorResource.getFile();
       // Data = html string
-      String data = new String(Files.readAllBytes(resource.toPath()));
+      SponsorCache sc = SponsorCache.getInstance();
+      String data = sc.find("sponsor");
+      if (data == null){
+        data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
+      }
       // Shows sponsor.html page without changing location
       HttpHeaders h = new HttpHeaders();
       h.setCacheControl(cacheConfig(1));
