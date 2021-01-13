@@ -12,7 +12,6 @@ import java.util.List;
 
 @Service
 public class ShortURLService {
-
   private final ShortURLRepository shortURLRepository;
 
   public ShortURLService(ShortURLRepository shortURLRepository) {
@@ -30,16 +29,15 @@ public class ShortURLService {
   public ShortURL save(String url, String sponsor, String ip, boolean qrWasGenerated) {
     ShortURL su = ShortURLBuilder.newInstance().target(url)
         .uri((String hash) -> linkTo(methodOn(UrlShortenerController.class).redirectTo(hash, null)).toUri())
-        .sponsor(sponsor).createdNow().randomOwner().temporaryRedirect().treatAsSafe().ip(ip).unknownCountry()
+        .sponsor(sponsor).createdNow().randomOwner().temporaryRedirect().treatAsUnsafe().ip(ip).unknownCountry()
         .qrGenerated((String hash) -> {
-          try{
+          try {
             return linkTo(methodOn(UrlShortenerController.class).retrieveQRCodebyHash(hash, null, null)).toUri();
-          }
-          catch(Exception e){
+          } catch (Exception e) {
             return null;
           }
-        }, qrWasGenerated)
-        .description("Aun no verificada").build();
+        }, qrWasGenerated).description("Aun no verificada").build();
+
     return shortURLRepository.save(su);
   }
 
