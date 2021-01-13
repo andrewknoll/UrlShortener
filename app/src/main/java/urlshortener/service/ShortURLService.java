@@ -31,7 +31,7 @@ public class ShortURLService {
           } catch (Exception e) {
             return null;
           }
-        }, qrWasGenerated).description("Aun no verificada").build();
+        }, qrWasGenerated).description("URL not yet verified").build();
 
     return shortURLRepository.save(su);
   }
