@@ -23,10 +23,11 @@ public class QRService {
   public CompletableFuture<QR> createQR(String origin, String hash) throws InterruptedException, URISyntaxException {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     URI uri = new URI(origin + "/" + hash);
+    URI uriLocation = new URI(origin + "/qr/" + hash);
     QRCode.from(uri.toString()).to(ImageType.PNG).writeTo(oos);
     QR qr = QRBuilder.newInstance()
         .hash(hash)
-        .uri((String h) -> linkTo(methodOn(QRController.class).retrieveQRCodebyHash(origin, hash, null)).toUri())
+        .uri(uriLocation)
         .code(oos.toByteArray()).build();
 
     return CompletableFuture.completedFuture(qr);

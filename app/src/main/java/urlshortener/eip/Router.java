@@ -35,17 +35,18 @@ public class Router extends RouteBuilder {
       .to("direct:errors");
     
     from(QR_URI)
+      .routeId("qr")
       .streamCaching()
       .setHeader("Accept", simple("image/png"))
       .setHeader(Exchange.HTTP_METHOD, constant("GET"))
       .loadBalance()
       .failover(2, false, true) //roundrobin enabled, sends to next machine if failure occurs
-        .toD("http://" + this.HOST1 + "/qr?origin=${body}&hash=${header.hash}")
-        .toD("http://" + this.HOST2 + "/qr?origin=${body}&hash=${header.hash}")
+        .toD(this.HOST1 + "/qr?origin=${body}&hash=${header.hash}").id("tohost1")
+        .toD(this.HOST2 + "/qr?origin=${body}&hash=${header.hash}").id("tohost2")
       .end();
 
     from("direct:errors")
-        .log("shit")
+        .routeId("errors")
         .process(new Decoder())
         .setBody(simple("ERROR while trying to generate QR code for address ${body}/${header.hash}. Perhaps QR service is down?"))
         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500));

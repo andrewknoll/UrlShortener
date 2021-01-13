@@ -128,6 +128,9 @@ public class UrlShortenerController {
 
     if (urlValidator.isValid(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
+      if(su == null){
+        su = shortUrlService.findByTarget(url).get(0);
+      }
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
       HttpStatus status = HttpStatus.CREATED;
@@ -149,7 +152,7 @@ public class UrlShortenerController {
 
   }
 
-  @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
+  @RequestMapping(value = { "/qr/{hash}", "/qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {
@@ -169,12 +172,12 @@ public class UrlShortenerController {
               }
             });
             Message out = exchange.getOut();
-            int responseCode = out.getHeader(Exchange.HTTP_RESPONSE_CODE, int.class);
-            if(responseCode == HttpStatus.ACCEPTED.value()){
+            Integer responseCode = out.getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
+            if(responseCode.intValue() == HttpStatus.ACCEPTED.value()){
                 return new ResponseEntity<>(out.getBody(byte[].class), HttpStatus.ACCEPTED);
             }
             else{
-              return new ResponseEntity<>(out.getBody(), HttpStatus.resolve(responseCode));
+              return new ResponseEntity<>(out.getBody(), HttpStatus.resolve(responseCode.intValue()));
             }
           }
           else {
