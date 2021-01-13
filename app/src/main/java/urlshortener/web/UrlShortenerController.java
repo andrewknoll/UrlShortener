@@ -5,7 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.json.Json;
@@ -24,8 +23,6 @@ import org.apache.http.client.ClientProtocolException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -42,8 +39,6 @@ import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
 
 import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static urlshortener.eip.Router.QR_URI;
@@ -315,7 +310,7 @@ public class UrlShortenerController {
   /**
    * 
    * @param inputURL URL to being shortened
-   * @return True, if and only if, inputURL is reachable.
+   * @return True, if and only if, inputURL is reachable (200 <= status code < 400)
    */
   private boolean reachableURL(String inputURL) {
     HttpURLConnection httpURLConn;
@@ -324,7 +319,10 @@ public class UrlShortenerController {
       // HEAD request is like GET request but just expecting headers, not resources
       httpURLConn.setRequestMethod("HEAD");
       // System.out.println("Status request: " + httpURLConn.getResponseCode())
-      return httpURLConn.getResponseCode() == HttpURLConnection.HTTP_OK;
+      int HTTP_SUCCESS = 200;  // Success HTTP code
+      int HTTP_ERROR = 400;   // Error HTTP code (starting)
+      int responseCode = httpURLConn.getResponseCode();
+      return (HTTP_SUCCESS <= responseCode) && (responseCode < HTTP_ERROR);
     } catch (Exception e) {
       System.out.println("Error: " + e.getMessage());
       return false;
