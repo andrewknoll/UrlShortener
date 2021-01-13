@@ -1,10 +1,6 @@
 package urlshortener.web;
 
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.FileReader;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -53,7 +49,6 @@ import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
 
-import java.io.UnsupportedEncodingException;
 import org.apache.commons.validator.routines.InetAddressValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,7 +201,7 @@ public class UrlShortenerController {
             HttpHeaders h = new HttpHeaders();
             h.add("hash", hash);
             h.setLocation(q.getUri());
-            h.setCacheControl(cacheConfig());
+            h.setCacheControl(cacheConfig(10));
             return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
           }
         }
