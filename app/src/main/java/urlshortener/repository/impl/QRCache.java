@@ -63,5 +63,5 @@ public class QRCache {
             expiryDate.add(Calendar.DAY_OF_MONTH, 10);
             return new ExpirableQR(image,  expiryDate);
         } 
-    };
+    }
 }
