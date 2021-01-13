@@ -1,4 +1,40 @@
-$(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-dot-offgl8876899977678.uk.r.appspot.com/xxx
+let openConnection = false;
+let socket;
+
+$(document).ready(function() {
+
+
+    $("#webSocketConnect").click(function(event) { // Open websocket connection
+        socket = new WebSocket('ws://localhost:50000/link');
+        socket.addEventListener('open', function(event) {
+            openConnection = true;
+            $("#wsButtonLabel").text("✅");
+
+        });
+
+        socket.addEventListener('message', function(msg) {
+            // msg.data contains the short url
+            // WS message reception
+            var res = msg.data.split("/");
+            // Save hash
+            shortenedHash = res[res.length - 1];
+            $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing");
+            $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.data + "'>" + msg.data + "</a></div>");
+            $("#notifyShortening").text("");
+            $('#urlInput').val('');
+            $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
+        });
+    })
+
+    $("#searchButtonWS").click(function(event) {
+        if (openConnection) {
+            var url = $("#urlInputWS").val();
+            socket.send(url);
+        } else {
+            alert("Por favor, abre la conexion con el websocket primero")
+        }
+    })
+
 
     var shortenedHash = null;
 
@@ -19,7 +55,7 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
             },
             success: function(msg) {
                 shortenedHash = msg.hash;
-                $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing... ⏳");
+                $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing ");
                 $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
                 $("#notifyShortening").text("");
                 $('#urlInput').val('');

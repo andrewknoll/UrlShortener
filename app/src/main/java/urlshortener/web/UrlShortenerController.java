@@ -5,7 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.json.Json;
@@ -24,8 +23,6 @@ import org.apache.http.client.ClientProtocolException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -78,16 +75,17 @@ public class UrlShortenerController {
   public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
-      // If not safe return bad request
       String finalURL = l.getTarget();
-      System.out.println("Uri is safe " + l.getSafe().toString());
+      // If URL is safe and reachable, redirect
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
         return redirectThroughSponsor();
       } else if (!l.getSafe()) {
+        // If not safe return Forbidden 403
         String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
-        return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(json, HttpStatus.FORBIDDEN);
       } else {
+        // If not reachable return statuscode 400
         String json = Json.createObjectBuilder().add("error", "URI not reachable").build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
       }
@@ -171,7 +169,7 @@ public class UrlShortenerController {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
 
     try {
-      // Local varables
+      // Local variables
       BufferedReader br;
       List<String> urlsList = new ArrayList<>();
       List<String> problems = new ArrayList<>();
@@ -227,8 +225,6 @@ public class UrlShortenerController {
       return new ResponseEntity<>(resultString, responseHeaders, HttpStatus.CREATED);
 
     } catch (Exception e) {
-      // System.out.println("Exception " + e.toString());
-      // e.printStackTrace();
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

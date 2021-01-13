@@ -21,7 +21,6 @@ import static urlshortener.fixtures.ShortURLFixture.url1;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -182,10 +181,11 @@ public class UrlShortenerTests {
   }
 
   @Test
-  public void doesNotREdirectIfURLNotSafe() throws Exception {
+  public void doesNotRedirectIfURLNotValidated() throws Exception {
     when(shortUrlService.findByKey(anyString())).thenReturn(someUnsafeUrl());
 
-    mockMvc.perform(get("/{id}", "someKey")).andDo(print()).andExpect(status().isBadRequest());
+    mockMvc.perform(get("/{id}", "someKey")).andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error", is("URL aun no validada")));
   }
 
   private void configureSave(String sponsor, URI qrUri) {

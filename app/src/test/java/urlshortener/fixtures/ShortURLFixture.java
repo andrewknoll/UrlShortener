@@ -34,7 +34,7 @@ public class ShortURLFixture {
 
   public static ShortURL someUnsafeUrl() {
     return new ShortURL("someKey", "http://example.com/", null, null, null, null, 307, false, null, null, null,
-        "URL marcada por Google Safe Browsing como  SOCIAL_ENGINEERING");
+        "URL aun no validada");
   }
 
   public static ShortURL someUrl() {
