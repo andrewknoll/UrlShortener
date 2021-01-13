@@ -18,6 +18,7 @@ out/
 
 #ignore properties file
 app/src/main/resources/application.properties
+app/src/test/resources/application.properties
 
 # Other
 
