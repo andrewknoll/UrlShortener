@@ -168,7 +168,8 @@ public class SystemTests {
 
     ResponseEntity<String> safeRE = restTemplate.getForEntity("/" + safeUrlHash, String.class);
 
-    // Tries to query the endpoint 10 times or until it is verified
+    // Tries to query the endpoint 10 times or until it is verified by the async
+    // process
     int tries = 0;
     while (tries < MAX_TRIES && safeRE.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
       Thread.sleep(1000);
@@ -189,7 +190,7 @@ public class SystemTests {
     String error = rc.read("$.error");
 
     // Tries to query the endpoint until google safe browsing confirms it is not
-    // safe
+    // safe asyncronously
     tries = 0;
     while (tries < MAX_TRIES && error.equals("Aun no verificada")) {
       Thread.sleep(1000);
