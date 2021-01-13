@@ -60,8 +60,8 @@ import org.springframework.util.MultiValueMap;
 import net.glxn.qrgen.javase.QRCode;
 import org.springframework.web.client.RestTemplate;
 
+@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@ContextConfiguration()
 @DirtiesContext
 public class SystemTests {
 
@@ -70,7 +70,6 @@ public class SystemTests {
 
   @LocalServerPort
   private int port;
-
 
   RestTemplate qrRestTemplate = new RestTemplate();
   MockRestServiceServer qrServer = MockRestServiceServer.bindTo(qrRestTemplate).build();
