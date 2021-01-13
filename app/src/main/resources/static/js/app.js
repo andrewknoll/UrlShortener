@@ -1,4 +1,46 @@
-$(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-dot-offgl8876899977678.uk.r.appspot.com/xxx
+let openConnection = false;
+let socket;
+
+$(document).ready(function() {
+
+    $("#webSocketConnect").click(function(event) { // Open websocket connection
+        socket = new WebSocket('ws://localhost:50000/link');
+        socket.addEventListener('open', function(event) {
+            openConnection = true;
+            $("#wsButtonLabel").text("✅");
+
+        });
+
+        socket.addEventListener('message', function(msg) {
+            // msg.data contains the short url
+            // WS message reception
+
+            if (msg.data == "Invalid url") {
+                $("#result").html("<div class='alert alert-danger lead'> ERROR: " + msg.data + "</div>");
+                $('#urlInputWS').val('');
+            } else {
+                var res = msg.data.split("/");
+                // Save hash
+                shortenedHash = res[res.length - 1];
+                $("#safeBrowsingCheck").text("The website will be verified by Google Safe Browsing");
+                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.data + "'>" + msg.data + "</a></div>");
+                $("#notifyShortening").text("");
+                $('#urlInputWS').val('');
+                $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
+            }
+
+        });
+    })
+
+    $("#searchButtonWS").click(function(event) {
+        if (openConnection) {
+            var url = $("#urlInputWS").val();
+            socket.send(url);
+        } else {
+            alert("Please, open the connection with the WebSocket first")
+        }
+    })
+
 
     var shortenedHash = null;
 
@@ -19,7 +61,7 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
             },
             success: function(msg) {
                 shortenedHash = msg.hash;
-                $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing... ⏳");
+                $("#safeBrowsingCheck").text("The website will be verified by Google Safe Browsing");
                 $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
                 $("#notifyShortening").text("");
                 $('#urlInput').val('');
@@ -59,7 +101,7 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
                 contentType: false,
                 success: function(csvContent, status, xhr) {
 
-                    $("#safeBrowsingCheck").text("Verificando y acordando urls... ⏳");
+                    $("#safeBrowsingCheck").text("Verifying and shortening urls...");
                     $("#notifyShortening").text("Success shortening");
 
                     var encodedUri = encodeURI(csvContent);
@@ -70,7 +112,7 @@ $(document).ready(function() { // https://mrnxajqdmrmdwkrpenecpvmkozeusfipwpgw-d
                     link.setAttribute("download", filename);
                     document.body.appendChild(link);
                     link.click();
-                    $("#notifyShortening").text("Archivo descargado ✅");
+                    $("#notifyShortening").text("File downloaded ✅");
 
                 },
                 error: function(output, status, xhr) {

@@ -28,7 +28,7 @@
             </div>
         </div>
         <div style="text-align: center;padding-bottom: 10px;">
-            <p>O elige un archivo CSV con las urls a acortar aquí 👇🏼</p>
+            <p>Or choose your CSV file with the urls to short here 👇🏼</p>
         </div>
         <div class="col-lg-12 text-center">
             <div class="input-bar-item" style="margin:auto;padding-inline-start: 40%;padding-inline-end: 40%;">
@@ -43,6 +43,24 @@
 
                     </div>
                 </form>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div style="text-align: center;padding-bottom: 5px;padding-top: 30px">
+                <p>Now you can also try to send your urls through websockets! → &nbsp;<button id="webSocketConnect">Conectar a WS</button>
+                    <label id="wsButtonLabel" for="webSocketConnect"></label>
+                </p>
+            </div>
+            <div class="col-lg-12 text-center">
+                <div class="input-group input-group-lg col-sm-offset-4 col-sm-4"></div>
+                <div class="input-group input-group-lg col-sm-offset-4 col-sm-4">
+                    <input id="urlInputWS" class="center-block form-control input-lg" placeholder="Enter a URL" title="Enter a URL" type="text">
+                    <span class="input-group-btn">
+                        <button id="searchButtonWS" class="btn btn-lg btn-primary">Shortme with WS!</button>
+                    </span>
+                </div>
+                <br>
             </div>
         </div>
         <div class="row">
@@ -70,6 +88,9 @@
             </div>
         </div>
     </div>
+</body>
+
+</html>
 </div>
 </body>
 

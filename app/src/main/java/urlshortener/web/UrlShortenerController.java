@@ -77,16 +77,17 @@ public class UrlShortenerController {
   public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
-      // If not safe return bad request
       String finalURL = l.getTarget();
-      System.out.println("Uri is safe " + l.getSafe().toString());
+      // If URL is safe and reachable, redirect
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
         return redirectThroughSponsor();
       } else if (!l.getSafe()) {
+        // If not safe return Forbidden 403
         String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
-        return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(json, HttpStatus.FORBIDDEN);
       } else {
+        // If not reachable return statuscode 400
         String json = Json.createObjectBuilder().add("error", "URI not reachable").build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
       }
@@ -239,8 +240,6 @@ public class UrlShortenerController {
       return new ResponseEntity<>(resultString, responseHeaders, HttpStatus.CREATED);
 
     } catch (Exception e) {
-      // System.out.println("Exception " + e.toString());
-      // e.printStackTrace();
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
