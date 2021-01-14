@@ -152,13 +152,14 @@ public class SystemTests {
   @Test
   public void testRedirectionToSponsor() throws Exception {
     ResponseEntity<String> entityURL = postLink("http://example.com/");
+    ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
+
     int tries = 0;
     while (tries < MAX_TRIES && JsonPath.parse(entityURL.getBody()).read("$.safe").toString().equals("false")) {
       Thread.sleep(1000);
       tries++;
     }
 
-    ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
     assertThat(entity.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
     assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));
   }
