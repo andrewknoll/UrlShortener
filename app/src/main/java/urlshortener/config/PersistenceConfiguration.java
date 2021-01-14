@@ -2,6 +2,7 @@ package urlshortener.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -14,6 +15,7 @@ import urlshortener.repository.impl.QRRepositoryImpl;
 import urlshortener.repository.impl.ShortURLRepositoryImpl;
 
 @Configuration
+@Import(WebSocketConfig.class)
 public class PersistenceConfiguration {
 
   private final JdbcTemplate jdbc;

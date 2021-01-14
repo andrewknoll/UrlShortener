@@ -1,5 +1,5 @@
 const hash = window.location.pathname;
-const eventURL = "http://localhost:8080/redirect" + hash;
+const eventURL = "http://" + window.location.host + "/redirect" + hash;
 let eventSource = new EventSource(eventURL);
 
 eventSource.onopen = function(){

@@ -31,7 +31,7 @@ public class WebSocketsRouter extends RouteBuilder {
             UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" },
                     UrlValidator.ALLOW_2_SLASHES);
             if (urlValidator.isValid(url)) {
-                ShortURL su = shortUrlService.save(url, "", "", false);
+                ShortURL su = shortUrlService.save(url, null, null, false);
                 safeBrowsingCheck(su, url);
                 exchange.getIn().setBody("http://localhost:8080" + su.getUri().toString());
             } else {
