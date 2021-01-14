@@ -120,17 +120,6 @@ public class UrlShortenerTests {
   }
 
   @Test
-  public void thatRedirectToReturnsTemporaryRedirectIfKeyExists() throws Exception {
-    configureSave(null, null, true);
-
-    when(shortUrlService.findByKey("f684a3c4")).thenReturn(urlWithParameters(null, null, true));
-
-    mockMvc.perform(get("/{id}", "f684a3c4"))
-            .andDo(print())
-            .andExpect(status().isTemporaryRedirect());
-  }
-
-  @Test
   public void thatRedirectToReturnsNotFoundIdIfKeyDoesNotExist() throws Exception {
     when(shortUrlService.findByKey("someKey")).thenReturn(null);
 
