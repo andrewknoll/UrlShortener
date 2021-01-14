@@ -234,6 +234,14 @@ public class UrlShortenerController {
     return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
   }
 
+  /**
+   *
+   * @param urls CSV file with the urls to shorten
+   * @return The result CSV in String format with the Status code 201 if the
+   *         processing was successfull and all urls were shortened
+   * @return Statuscode 500 if there was an IOexception reading the csv file
+   * @throws IOException
+   */
   @RequestMapping(value = "/multipleLinks", method = RequestMethod.POST, produces = "text/csv")
   public ResponseEntity<String> multipleShortener(@RequestParam("urls") MultipartFile urls,
       HttpServletRequest request) {
@@ -295,7 +303,7 @@ public class UrlShortenerController {
       responseHeaders.setContentDisposition(cd);
       return new ResponseEntity<>(resultString, responseHeaders, HttpStatus.CREATED);
 
-    } catch (Exception e) {
+    } catch (IOException e) {
       log.error(e.toString());
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
