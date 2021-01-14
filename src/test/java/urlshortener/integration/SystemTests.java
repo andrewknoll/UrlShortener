@@ -137,8 +137,7 @@ public class SystemTests {
     }
 
     assertThat(entity.getStatusCode(), is(HttpStatus.CREATED));
-    assertThat(entity.getHeaders().getLocation(),
-        is(new URI("http://localhost:" + this.port + "/5e399431")));
+    assertThat(entity.getHeaders().getLocation(), is(new URI("http://localhost:" + this.port + "/5e399431")));
     assertThat(entity.getHeaders().getContentType(), is(new MediaType("application", "json")));
     ReadContext rc = JsonPath.parse(entity.getBody());
     assertThat(rc.read("$.hash"), is("5e399431"));
@@ -151,17 +150,15 @@ public class SystemTests {
 
   @Test
   public void testRedirectionToSponsor() throws Exception {
-    ResponseEntity<String> entityURL = postLink("http://example.com/");
-    ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
-
+    ResponseEntity<String> entityURL = postLink("https://google.com/");
     int tries = 0;
     while (tries < MAX_TRIES && JsonPath.parse(entityURL.getBody()).read("$.safe").toString().equals("false")) {
       Thread.sleep(1000);
       tries++;
     }
 
+    ResponseEntity<String> entity = restTemplate.getForEntity("/bf8e423d", String.class);
     assertThat(entity.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
-    assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));
   }
 
   @Test
@@ -251,11 +248,10 @@ public class SystemTests {
     return restTemplate.postForEntity("/link", parts, String.class);
   }
 
-  private boolean checkQRUri(ResponseEntity<String> entity){
-    try{
+  private boolean checkQRUri(ResponseEntity<String> entity) {
+    try {
       return JsonPath.parse(entity.getBody()).read("$.qrUri") == null;
-    }
-    catch(PathNotFoundException e){
+    } catch (PathNotFoundException e) {
       return true;
     }
   }

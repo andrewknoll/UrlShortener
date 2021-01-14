@@ -87,22 +87,22 @@ public class UrlShortenerController {
 
   /**
    *
-   * @param url input URL to being shorted
-   * @param sponsor sponsor assigned in case we had some
+   * @param url        input URL to being shorted
+   * @param sponsor    sponsor assigned in case we had some
    * @param generateQR input to know if we have to generate a QR
-   * @param request HTTPServletRequest
+   * @param request    HTTPServletRequest
    * @return Status code 201 if object created and validated without problems
-   *         Status code 206 if problems creating QR
-   *         Status code 400 and json error message if introduced URI does not begin with http or https
+   *         Status code 206 if problems creating QR Status code 400 and json
+   *         error message if introduced URI does not begin with http or https
    * @throws ClientProtocolException
    * @throws IOException
    * @throws URISyntaxException
    */
   @RequestMapping(value = "/link", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> shortener(@RequestParam("url") String url,
-                                     @RequestParam(value = "sponsor", required = false) String sponsor,
-                                     @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR, HttpServletRequest request)
-          throws ClientProtocolException, IOException, URISyntaxException {
+      @RequestParam(value = "sponsor", required = false) String sponsor,
+      @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR, HttpServletRequest request)
+      throws ClientProtocolException, IOException, URISyntaxException {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" }, UrlValidator.ALLOW_2_SLASHES);
 
     if (urlValidator.isValid(url)) {
@@ -134,12 +134,11 @@ public class UrlShortenerController {
 
   /**
    *
-   * @param id hash from shorted URL
+   * @param id      hash from shorted URL
    * @param request HTTPServletRequest
-   * @return Status code 307 and sponsor page if hash exists
-   *         Status code 400 if final URI unreachable
-   *         Status code 403 if Google Safe Browsing does not validate
-   *         Status code 404 if hash does not exist
+   * @return Status code 307 and sponsor page if hash exists Status code 400 if
+   *         final URI unreachable Status code 403 if Google Safe Browsing does
+   *         not validate Status code 404 if hash does not exist
    */
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
