@@ -43,10 +43,22 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import static urlshortener.eip.Router.QR_URI;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
+
+import org.apache.commons.validator.routines.InetAddressValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.net.URLEncoder;
 
 @RestController
 public class UrlShortenerController {
+
+  private static final Logger log = LoggerFactory
+  .getLogger(UrlShortenerController.class);
 
   private final ShortURLService shortUrlService;
 
@@ -132,6 +144,9 @@ public class UrlShortenerController {
 
     if (urlValidator.isValid(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
+      if(su == null){
+        su = shortUrlService.findByTarget(url).get(0);
+      }
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
       HttpStatus status = HttpStatus.CREATED;
@@ -154,25 +169,45 @@ public class UrlShortenerController {
 
   }
 
-  @RequestMapping(value = { "/qr/{hash}", "qr/{hash}.{format}" }, method = RequestMethod.GET)
+  @RequestMapping(value = { "/qr/{hash}", "/qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {
-      QR q = qrService.findByHash(hash); // Try to find if QR was already generated
-      ShortURL su = shortUrlService.findByKey(hash); // Try to find ShortUrl
-      if (su != null) {
-        clickService.saveClick(hash, extractIP(request));
-        shortUrlService.updateShortUrl(su, new URI(extractIP(request) + "/" + su.getHash()), su.getSafe(),
-            su.getDescription());
-        if (q == null) { // if QR was never generated
-          return producerTemplate.requestBody(QR_URI, hash, ResponseEntity.class);
-        } else {
-          HttpHeaders h = new HttpHeaders();
-          h.add("hash", hash);
-          h.setLocation(q.getUri());
-          h.setCacheControl(cacheConfig(10));
-          return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
+      QR q = qrService.findByHash(hash); //Try to find if QR was already generated
+      ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
+      try{
+        if (su != null) {
+          shortUrlService.updateShortUrl(su, new URI(extractLocalAddress(request) + "/" + su.getHash()), su.getSafe(),
+              su.getDescription());
+          if (q == null) { //if QR was never generated
+            
+                
+            Exchange exchange = producerTemplate.send(QR_URI, new Processor() {
+              public void process(Exchange exchange) throws Exception {
+                exchange.getIn().setBody(extractLocalAddress(request));
+                exchange.getIn().setHeader("hash", su.getHash());
+              }
+            });
+            Message out = exchange.getOut();
+            Integer responseCode = out.getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
+            if(responseCode.intValue() == HttpStatus.ACCEPTED.value()){
+                return new ResponseEntity<>(out.getBody(byte[].class), HttpStatus.ACCEPTED);
+            }
+            else{
+              return new ResponseEntity<>(out.getBody(), HttpStatus.resolve(responseCode.intValue()));
+            }
+          }
+          else {
+            HttpHeaders h = new HttpHeaders();
+            h.add("hash", hash);
+            h.setLocation(q.getUri());
+            h.setCacheControl(cacheConfig(10));
+            return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
+          }
         }
+      }
+      catch(Exception e){
+        return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
     return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
@@ -240,15 +275,18 @@ public class UrlShortenerController {
       return new ResponseEntity<>(resultString, responseHeaders, HttpStatus.CREATED);
 
     } catch (Exception e) {
+      log.error(e.toString());
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  /**
-   * 
-   * @param su  ShortURL that will be updated once checked
-   * @param url url to verify
-   */
+  @RequestMapping(value = "/failure", method = RequestMethod.GET)
+  public ResponseEntity<?> failure(/*@RequestParam("body") String body,*/
+      HttpServletRequest request) {
+      log.error("Failure: "/* + body*/);
+      return new ResponseEntity<>(/*body*/ "shit", HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
   public void safeBrowsingCheck(ShortURL su, String url) {
     googleSafeBrowsing(su, url, safeCheckService, shortUrlService);
   }
@@ -277,6 +315,7 @@ public class UrlShortenerController {
         return null;
       });
     } catch (Exception e) {
+      log.error(e.toString());
       shortUrlService.updateShortUrl(su, su.getUri(), false, "No se ha podido verificar con google Safe Browsing");
     }
 
@@ -302,6 +341,7 @@ public class UrlShortenerController {
 
     } catch (IOException e) {
       e.printStackTrace();
+      log.error(e.toString());
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
     }
@@ -309,6 +349,16 @@ public class UrlShortenerController {
 
   private String extractIP(HttpServletRequest request) {
     return request.getRemoteAddr();
+  }
+
+  private String extractLocalAddress(HttpServletRequest request) throws UnsupportedEncodingException{
+    InetAddressValidator validator = InetAddressValidator.getInstance();
+    String address = request.getLocalAddr();
+    if (validator.isValidInet6Address(address)){
+      address = "[" + address + "]";
+    }
+    return URLEncoder.encode("http://" + address + ":" + request.getLocalPort(), "UTF-8");
+    
   }
 
   /**
@@ -328,7 +378,7 @@ public class UrlShortenerController {
       int responseCode = httpURLConn.getResponseCode();
       return (HTTP_SUCCESS <= responseCode) && (responseCode < HTTP_ERROR);
     } catch (Exception e) {
-      System.out.println("Error: " + e.getMessage());
+      log.error("Error: " + e.getMessage());
       return false;
     }
   }

@@ -14,22 +14,6 @@ public class QRFixture {
   }
 
   public static QR qr1() {
-    return new QR("1", null, toByteArray(QRCode.from("http://localhost/f684a3c4")));
-  }
-
-  public static QR qr1modified() {
-    return new QR("1", null, toByteArray(QRCode.from("http://localhost/1")));
-  }
-
-  public static QR qr2() {
-    return new QR("2", null, toByteArray(QRCode.from("http://www.unizar.es")));
-  }
-
-  public static QR qr3() {
-    return new QR("3", null, toByteArray(QRCode.from("http://www.google.com")));
-  }
-
-  public static QR badqr() {
-    return new QR(null, null, null);
+    return new QR("1", null, toByteArray(QRCode.from("something/f684a3c4")));
   }
 }
