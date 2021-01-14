@@ -1,4 +1,4 @@
-package urlshortener.web;
+package urlshortener.eip;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.commons.validator.routines.UrlValidator;
@@ -9,16 +9,17 @@ import urlshortener.service.ClickService;
 import urlshortener.service.QRService;
 import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
+import urlshortener.web.UrlShortenerController;
 
 @Component
-public class WebSocketController extends RouteBuilder {
+public class WebSocketsRouter extends RouteBuilder {
 
     private final ShortURLService shortUrlService;
 
     private final SafeCheckService safeCheckService;
 
-    public WebSocketController(ShortURLService shortUrlService, ClickService clickService, QRService qrService,
-            SafeCheckService safeCheckService) {
+    public WebSocketsRouter(ShortURLService shortUrlService, ClickService clickService, QRService qrService,
+                            SafeCheckService safeCheckService) {
         this.shortUrlService = shortUrlService;
         this.safeCheckService = safeCheckService;
     }
