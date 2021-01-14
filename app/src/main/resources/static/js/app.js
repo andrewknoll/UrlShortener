@@ -1,39 +1,51 @@
 let openConnection = false;
+var stompClient = null;
 let socket;
 
 $(document).ready(function() {
 
 
     $("#webSocketConnect").click(function(event) { // Open websocket connection
-        socket = new WebSocket('ws://localhost:50000/link');
-        socket.addEventListener('open', function(event) {
-            openConnection = true;
-            $("#wsButtonLabel").text("✅");
-
-        });
-
-        socket.addEventListener('message', function(msg) {
-            // msg.data contains the short url
-            // WS message reception
-            var res = msg.data.split("/");
-            // Save hash
-            shortenedHash = res[res.length - 1];
-            $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing");
-            $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.data + "'>" + msg.data + "</a></div>");
-            $("#notifyShortening").text("");
-            $('#urlInput').val('');
-            $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
-        });
-    })
+        if(openConnection){
+            openConnection = false;
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            $("#wsButtonLabel").text("");
+            $("#wsSocketConnect").text("Connect to WS");
+        }
+        else{
+        $("#wsSocketConnect").text("Disconnect from WS");
+        var socket = new SockJS('/stomp');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+                openConnection = true;
+                $("#wsButtonLabel").text("✅");
+                stompClient.subscribe('/reply/shorturl', function (msg) {
+                    // msg.body contains the short url
+                    // WS message reception
+                    // Save hash
+                    var res = JSON.parse(msg.body);
+                    console.log(res);
+                    shortenedHash = res.hash;
+                    $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing");
+                    $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + res.hostname + "/" + res.hash + "'>" + res.hostname + "/" + res.hash + "</a></div>");
+                    $("#notifyShortening").text("");
+                    $('#urlInput').val('');
+                    $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
+                });
+            });
+        }
+    });
 
     $("#searchButtonWS").click(function(event) {
         if (openConnection) {
             var url = $("#urlInputWS").val();
-            socket.send(url);
+            stompClient.send("/app/user", {}, url);
         } else {
-            alert("Por favor, abre la conexion con el websocket primero")
+            alert("Please, make sure websocket connection is open")
         }
-    })
+    });
 
 
     var shortenedHash = null;
