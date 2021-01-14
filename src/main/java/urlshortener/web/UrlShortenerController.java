@@ -107,7 +107,6 @@ public class UrlShortenerController {
 
     if (urlValidator.isValid(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
-      log.warn("El hash es " + su.getHash());
       if (su == null) {
         su = shortUrlService.findByTarget(url).get(0);
       }
@@ -184,7 +183,6 @@ public class UrlShortenerController {
 
     try {
       Thread.sleep(sleepingTimeMS);
-      log.debug("Sending: " + finalURI);
       emitter.send(finalURI);
     } catch (Exception e) {
       emitter.completeWithError(e);
@@ -352,26 +350,16 @@ public class UrlShortenerController {
       File resource = sponsorResource.getFile();
       // Data = html string
       SponsorCache sc = SponsorCache.getInstance();
-      try {
-        String data = sc.find("sponsor");
-        // Cached
-        if (data == null) {
-          data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
-        }
-        // Shows sponsor.html page without changing location
-        HttpHeaders h = new HttpHeaders();
-        h.setCacheControl(cacheConfig(1));
-        return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
-      } catch (Exception e) {
-        // Not cached
-        String data = "";
-        data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
-        // Shows sponsor.html page without changing location
-        HttpHeaders h = new HttpHeaders();
-        h.setCacheControl(cacheConfig(1));
-        return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
+      String data = sc.find("sponsor");
+      // Cached
+      if(data == null) {
+        data = new String(Files.readAllBytes(resource.toPath()));
+        data = sc.put("sponsor", data);
       }
-
+      // Shows sponsor.html page without changing location
+      HttpHeaders h = new HttpHeaders();
+      h.setCacheControl(cacheConfig(1));
+      return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
     } catch (IOException e) {
       e.printStackTrace();
       log.error(e.toString());

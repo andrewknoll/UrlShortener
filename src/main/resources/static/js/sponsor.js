@@ -13,7 +13,7 @@ eventSource.onmessage = function(event) {
 };
 
 eventSource.onerror = function(event) {
-    if(event.readyState == EventSource.CLOSED){
+    if(event.readyState === EventSource.CLOSED){
         console.log('Connection is closed.');
     }
     else{
