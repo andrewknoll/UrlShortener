@@ -5,22 +5,21 @@ let socket;
 $(document).ready(function() {
 
     $("#webSocketConnect").click(function(event) { // Open websocket connection
-        if(openConnection){
+        if (openConnection) {
             openConnection = false;
             if (stompClient !== null) {
                 stompClient.disconnect();
             }
             $("#wsButtonLabel").text("");
-            $("#wsSocketConnect").text("Connect to WS");
-        }
-        else{
-        $("#wsSocketConnect").text("Disconnect from WS");
-        var socket = new SockJS('/stomp');
-        stompClient = Stomp.over(socket);
-        stompClient.connect({}, function (frame) {
+            $("#webSocketConnect").text("Connect to WS");
+        } else {
+            $("#webSocketConnect").text("Disconnect from WS");
+            var socket = new SockJS('/stomp');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function(frame) {
                 openConnection = true;
                 $("#wsButtonLabel").text("✅");
-                stompClient.subscribe('/reply/shorturl', function (msg) {
+                stompClient.subscribe('/reply/shorturl', function(msg) {
                     // msg.body contains the short url
                     // WS message reception
                     // Save hash
