@@ -57,8 +57,7 @@ import java.net.URLEncoder;
 @RestController
 public class UrlShortenerController {
 
-  private static final Logger log = LoggerFactory
-  .getLogger(UrlShortenerController.class);
+  private static final Logger log = LoggerFactory.getLogger(UrlShortenerController.class);
 
   private final ShortURLService shortUrlService;
 
@@ -76,7 +75,8 @@ public class UrlShortenerController {
   private Resource sponsorResource;
 
   public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService,
-      SafeCheckService safeCheckService, ProducerTemplate producerTemplate, @Value("classpath:static/sponsor.html") Resource sponsorResource) throws IOException {
+      SafeCheckService safeCheckService, ProducerTemplate producerTemplate,
+      @Value("classpath:static/sponsor.html") Resource sponsorResource) throws IOException {
     this.shortUrlService = shortUrlService;
     this.clickService = clickService;
     this.qrService = qrService;
@@ -111,7 +111,8 @@ public class UrlShortenerController {
   /**
    *
    * @param hash ShortURL id
-   * @return Server Sent Events Emitter that is going to send finalURI after 5 seconds to redirect
+   * @return Server Sent Events Emitter that is going to send finalURI after 5
+   *         seconds to redirect
    */
   @RequestMapping(value = "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET)
   public SseEmitter getFinalURI(@PathVariable String hash) {
@@ -120,16 +121,15 @@ public class UrlShortenerController {
 
     String URI = "";
     ShortURL l = shortUrlService.findByKey(hash);
-    if (l != null){
+    if (l != null) {
       URI = l.getTarget();
     }
     String finalURI = URI;
 
-    try{
+    try {
       Thread.sleep(sleepingTimeMS);
       emitter.send(finalURI);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       emitter.completeWithError(e);
     }
     return emitter;
@@ -144,7 +144,7 @@ public class UrlShortenerController {
 
     if (urlValidator.isValid(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
-      if(su == null){
+      if (su == null) {
         su = shortUrlService.findByTarget(url).get(0);
       }
       HttpHeaders h = new HttpHeaders();
@@ -173,15 +173,14 @@ public class UrlShortenerController {
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {
-      QR q = qrService.findByHash(hash); //Try to find if QR was already generated
-      ShortURL su = shortUrlService.findByKey(hash); //Try to find ShortUrl
-      try{
+      QR q = qrService.findByHash(hash); // Try to find if QR was already generated
+      ShortURL su = shortUrlService.findByKey(hash); // Try to find ShortUrl
+      try {
         if (su != null) {
           shortUrlService.updateShortUrl(su, new URI(extractLocalAddress(request) + "/" + su.getHash()), su.getSafe(),
               su.getDescription());
-          if (q == null) { //if QR was never generated
-            
-                
+          if (q == null) { // if QR was never generated
+
             Exchange exchange = producerTemplate.send(QR_URI, new Processor() {
               public void process(Exchange exchange) throws Exception {
                 exchange.getIn().setBody(extractLocalAddress(request));
@@ -190,14 +189,12 @@ public class UrlShortenerController {
             });
             Message out = exchange.getOut();
             Integer responseCode = out.getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
-            if(responseCode.intValue() == HttpStatus.ACCEPTED.value()){
-                return new ResponseEntity<>(out.getBody(byte[].class), HttpStatus.ACCEPTED);
-            }
-            else{
+            if (responseCode.intValue() == HttpStatus.ACCEPTED.value()) {
+              return new ResponseEntity<>(out.getBody(byte[].class), HttpStatus.ACCEPTED);
+            } else {
               return new ResponseEntity<>(out.getBody(), HttpStatus.resolve(responseCode.intValue()));
             }
-          }
-          else {
+          } else {
             HttpHeaders h = new HttpHeaders();
             h.add("hash", hash);
             h.setLocation(q.getUri());
@@ -205,8 +202,7 @@ public class UrlShortenerController {
             return new ResponseEntity<byte[]>(q.getQR(), h, HttpStatus.ACCEPTED);
           }
         }
-      }
-      catch(Exception e){
+      } catch (Exception e) {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
         return new ResponseEntity<>(e, h, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -326,15 +322,14 @@ public class UrlShortenerController {
       // Data = html string
       SponsorCache sc = SponsorCache.getInstance();
       String data = sc.find("sponsor");
-      if (data == null){
+      if (data == null) {
         data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
       }
       // Shows sponsor.html page without changing location
       HttpHeaders h = new HttpHeaders();
       try {
         h.setLocation(new URI(target));
-      }
-      catch(URISyntaxException use){
+      } catch (URISyntaxException use) {
         h.setLocation(null);
       }
       h.setCacheControl(cacheConfig(1));
@@ -352,20 +347,21 @@ public class UrlShortenerController {
     return request.getRemoteAddr();
   }
 
-  private String extractLocalAddress(HttpServletRequest request) throws UnsupportedEncodingException{
+  private String extractLocalAddress(HttpServletRequest request) throws UnsupportedEncodingException {
     InetAddressValidator validator = InetAddressValidator.getInstance();
     String address = request.getLocalAddr();
-    if (validator.isValidInet6Address(address)){
+    if (validator.isValidInet6Address(address)) {
       address = "[" + address + "]";
     }
     return URLEncoder.encode("http://" + address + ":" + request.getLocalPort(), "UTF-8");
-    
+
   }
 
   /**
    * 
    * @param inputURL URL to being shortened
-   * @return True, if and only if, inputURL is reachable (200 <= status code < 400)
+   * @return True, if and only if, inputURL is reachable (200 <= status code <
+   *         400)
    */
   private boolean reachableURL(String inputURL) {
     HttpURLConnection httpURLConn;
@@ -374,8 +370,8 @@ public class UrlShortenerController {
       // HEAD request is like GET request but just expecting headers, not resources
       httpURLConn.setRequestMethod("HEAD");
       // System.out.println("Status request: " + httpURLConn.getResponseCode())
-      int HTTP_SUCCESS = 200;  // Success HTTP code
-      int HTTP_ERROR = 400;   // Error HTTP code (starting)
+      int HTTP_SUCCESS = 200; // Success HTTP code
+      int HTTP_ERROR = 400; // Error HTTP code (starting)
       int responseCode = httpURLConn.getResponseCode();
       return (HTTP_SUCCESS <= responseCode) && (responseCode < HTTP_ERROR);
     } catch (Exception e) {
