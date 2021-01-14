@@ -3,7 +3,6 @@ let socket;
 
 $(document).ready(function() {
 
-
     $("#webSocketConnect").click(function(event) { // Open websocket connection
         socket = new WebSocket('ws://localhost:50000/link');
         socket.addEventListener('open', function(event) {
@@ -15,14 +14,21 @@ $(document).ready(function() {
         socket.addEventListener('message', function(msg) {
             // msg.data contains the short url
             // WS message reception
-            var res = msg.data.split("/");
-            // Save hash
-            shortenedHash = res[res.length - 1];
-            $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing");
-            $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.data + "'>" + msg.data + "</a></div>");
-            $("#notifyShortening").text("");
-            $('#urlInput').val('');
-            $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
+
+            if (msg.data == "Invalid url") {
+                $("#result").html("<div class='alert alert-danger lead'> ERROR: " + msg.data + "</div>");
+                $('#urlInputWS').val('');
+            } else {
+                var res = msg.data.split("/");
+                // Save hash
+                shortenedHash = res[res.length - 1];
+                $("#safeBrowsingCheck").text("The website will be verified by Google Safe Browsing");
+                $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.data + "'>" + msg.data + "</a></div>");
+                $("#notifyShortening").text("");
+                $('#urlInputWS').val('');
+                $("#qrButton").html("<button id='searchButton' class='btn btn-lg btn-primary'>Generate QR Code</button>");
+            }
+
         });
     })
 
@@ -31,7 +37,7 @@ $(document).ready(function() {
             var url = $("#urlInputWS").val();
             socket.send(url);
         } else {
-            alert("Por favor, abre la conexion con el websocket primero")
+            alert("Please, open the connection with the WebSocket first")
         }
     })
 
@@ -55,7 +61,7 @@ $(document).ready(function() {
             },
             success: function(msg) {
                 shortenedHash = msg.hash;
-                $("#safeBrowsingCheck").text("La página será verificada por Google Safe Browsing ");
+                $("#safeBrowsingCheck").text("The website will be verified by Google Safe Browsing");
                 $("#result").html("<div class='alert alert-success lead'><a target='_blank' href='" + msg.uri + "'>" + msg.uri + "</a></div>");
                 $("#notifyShortening").text("");
                 $('#urlInput').val('');
@@ -95,7 +101,7 @@ $(document).ready(function() {
                 contentType: false,
                 success: function(csvContent, status, xhr) {
 
-                    $("#safeBrowsingCheck").text("Verificando y acordando urls... ⏳");
+                    $("#safeBrowsingCheck").text("Verifying and shortening urls...");
                     $("#notifyShortening").text("Success shortening");
 
                     var encodedUri = encodeURI(csvContent);
@@ -106,7 +112,7 @@ $(document).ready(function() {
                     link.setAttribute("download", filename);
                     document.body.appendChild(link);
                     link.click();
-                    $("#notifyShortening").text("Archivo descargado ✅");
+                    $("#notifyShortening").text("File downloaded ✅");
 
                 },
                 error: function(output, status, xhr) {

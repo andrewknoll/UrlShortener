@@ -65,8 +65,7 @@ public class SafeCheckService {
     } catch (UnsupportedEncodingException e) {
       // Notify if error occurred doing the request
       resultList.add(0, "REQUEST_ERROR");
-      resultList.add(1, "Error enviando peticion a Google Safe Browsing");
-      System.out.println("Request error");
+      resultList.add(1, "Error sending request to Google Safe Browsing");
       return CompletableFuture.completedFuture(resultList);
     }
     JsonReader jsonReader = Json.createReader(new StringReader(result));
@@ -76,7 +75,7 @@ public class SafeCheckService {
     if (code != 200) {
       // Notify if statuscode is different than 200
       resultList.add(0, "REQUEST_ERROR");
-      resultList.add(1, "Google Safe Browsing ha devuelto statuscode " + code);
+      resultList.add(1, "Google Safe Browsing returned statuscode " + code);
       return CompletableFuture.completedFuture(resultList);
     }
 
@@ -91,7 +90,7 @@ public class SafeCheckService {
       for (int i = 0; i < threats.size(); i++) {
         String currentThreatType = threats.getJsonObject(i).getString("threatType");
         resultList.add(0, "UNSAFE");
-        resultList.add(1, "URL marcada por Google Safe Browsing como " + currentThreatType);
+        resultList.add(1, "URL marked by Google Safe Browsing as " + currentThreatType);
       }
 
     }

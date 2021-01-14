@@ -198,7 +198,7 @@ public class SystemTests {
     // Tries to query the endpoint until google safe browsing confirms it is not
     // safe asyncronously
     tries = 0;
-    while (tries < MAX_TRIES && error.equals("Aun no verificada")) {
+    while (tries < MAX_TRIES && error.equals("URL not yet verified")) {
       Thread.sleep(1000);
       unsafeRE = restTemplate.getForEntity("/" + unsafeUrlHash, String.class);
       rc = JsonPath.parse(unsafeRE.getBody());
@@ -206,7 +206,7 @@ public class SystemTests {
       tries++;
     }
     // Checks the url is marked as unsafe and therefore isn't redirected
-    assertThat(rc.read("$.error"), is("URL marcada por Google Safe Browsing como SOCIAL_ENGINEERING"));
+    assertThat(rc.read("$.error"), is("URL marked by Google Safe Browsing as SOCIAL_ENGINEERING"));
     assertThat(unsafeRE.getStatusCode(), is(HttpStatus.FORBIDDEN));
 
   }

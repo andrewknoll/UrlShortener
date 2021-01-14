@@ -34,7 +34,7 @@ public class ShortURLFixture {
 
   public static ShortURL someUnsafeUrl() {
     return new ShortURL("someKey", "http://example.com/", null, null, null, null, 307, false, null, null, null,
-        "URL aun no validada");
+        "URL not yet verified");
   }
 
   public static ShortURL someUrl() {
