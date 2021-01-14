@@ -54,7 +54,7 @@ public class QRRepositoryImpl implements QRRepository {
           new int[] { Types.VARCHAR, Types.BLOB });
     } catch (DuplicateKeyException e) {
       log.debug("When insert for key {}", qr.getHash(), e);
-      return qr;
+      return null;
     } catch (Exception e) {
       log.debug("When insert", e);
       return null;
