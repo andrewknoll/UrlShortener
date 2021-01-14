@@ -85,6 +85,62 @@ public class UrlShortenerController {
     this.sponsorResource = sponsorResource;
   }
 
+  /**
+   *
+   * @param url input URL to being shorted
+   * @param sponsor sponsor assigned in case we had some
+   * @param generateQR input to know if we have to generate a QR
+   * @param request HTTPServletRequest
+   * @return Status code 201 if object created and validated without problems
+   *         Status code 206 if problems creating QR
+   *         Status code 400 and json error message if introduced URI does not begin with http or https
+   * @throws ClientProtocolException
+   * @throws IOException
+   * @throws URISyntaxException
+   */
+  @RequestMapping(value = "/link", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> shortener(@RequestParam("url") String url,
+                                     @RequestParam(value = "sponsor", required = false) String sponsor,
+                                     @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR, HttpServletRequest request)
+          throws ClientProtocolException, IOException, URISyntaxException {
+    UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" }, UrlValidator.ALLOW_2_SLASHES);
+
+    if (urlValidator.isValid(url)) {
+      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
+      if (su == null) {
+        su = shortUrlService.findByTarget(url).get(0);
+      }
+      HttpHeaders h = new HttpHeaders();
+      h.setLocation(su.getUri());
+      HttpStatus status = HttpStatus.CREATED;
+      try {
+        if (generateQR) {
+          qrService.save(su);
+        }
+      } catch (Exception e) {
+        status = HttpStatus.PARTIAL_CONTENT;
+      }
+
+      safeBrowsingCheck(su, url);
+
+      return new ResponseEntity<>(su, h, status);
+
+    } else {
+      String json = Json.createObjectBuilder().add("error", "Debe ser una URI http o https").build().toString();
+      return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
+    }
+
+  }
+
+  /**
+   *
+   * @param id hash from shorted URL
+   * @param request HTTPServletRequest
+   * @return Status code 307 and sponsor page if hash exists
+   *         Status code 400 if final URI unreachable
+   *         Status code 403 if Google Safe Browsing does not validate
+   *         Status code 404 if hash does not exist
+   */
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
@@ -93,13 +149,13 @@ public class UrlShortenerController {
       // If URL is safe and reachable, redirect
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
-        return redirectThroughSponsor(l.getTarget());
+        return redirectThroughSponsor();
       } else if (!l.getSafe()) {
         // If not safe return Forbidden 403
-        String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
+        String json = Json.createObjectBuilder().add("error", "URL not yet verified").build().toString();
         return new ResponseEntity<>(json, HttpStatus.FORBIDDEN);
       } else {
-        // If not reachable return statuscode 400
+        // If not reachable return status code 400
         String json = Json.createObjectBuilder().add("error", "URI not reachable").build().toString();
         return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
       }
@@ -133,40 +189,6 @@ public class UrlShortenerController {
       emitter.completeWithError(e);
     }
     return emitter;
-  }
-
-  @RequestMapping(value = "/link", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<?> shortener(@RequestParam("url") String url,
-      @RequestParam(value = "sponsor", required = false) String sponsor,
-      @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR, HttpServletRequest request)
-      throws ClientProtocolException, IOException, URISyntaxException {
-    UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" }, UrlValidator.ALLOW_2_SLASHES);
-
-    if (urlValidator.isValid(url)) {
-      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), generateQR);
-      if (su == null) {
-        su = shortUrlService.findByTarget(url).get(0);
-      }
-      HttpHeaders h = new HttpHeaders();
-      h.setLocation(su.getUri());
-      HttpStatus status = HttpStatus.CREATED;
-      try {
-        if (generateQR) {
-          qrService.save(su);
-        }
-      } catch (Exception e) {
-        status = HttpStatus.PARTIAL_CONTENT;
-      }
-
-      safeBrowsingCheck(su, url);
-
-      return new ResponseEntity<>(su, h, status);
-
-    } else {
-      String json = Json.createObjectBuilder().add("error", "Debe ser una URI http o https").build().toString();
-      return new ResponseEntity<>(json, HttpStatus.BAD_REQUEST);
-    }
-
   }
 
   @RequestMapping(value = { "/qr/{hash}", "/qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
@@ -315,20 +337,30 @@ public class UrlShortenerController {
   /**
    * Function that shows sponsor.html page before redirecting to final URI
    */
-  private ResponseEntity<?> redirectThroughSponsor(String target) {
+  private ResponseEntity<?> redirectThroughSponsor() {
     try {
       // Reading HTML file
       File resource = sponsorResource.getFile();
       // Data = html string
       SponsorCache sc = SponsorCache.getInstance();
-      String data = sc.find("sponsor");
-      if (data == null) {
-        data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
+      try {
+        String data = sc.find("sponsor");
+        // Cached
+        // Shows sponsor.html page without changing location
+        HttpHeaders h = new HttpHeaders();
+        h.setCacheControl(cacheConfig(1));
+        return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
       }
-      // Shows sponsor.html page without changing location
-      HttpHeaders h = new HttpHeaders();
-      h.setCacheControl(cacheConfig(1));
-      return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
+      catch (Exception e) {
+        // Not cached
+        String data = "";
+        data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
+        // Shows sponsor.html page without changing location
+        HttpHeaders h = new HttpHeaders();
+        h.setCacheControl(cacheConfig(1));
+        return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
+      }
+
 
     } catch (IOException e) {
       e.printStackTrace();

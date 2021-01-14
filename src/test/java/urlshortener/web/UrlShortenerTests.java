@@ -78,7 +78,7 @@ public class UrlShortenerTests {
 
   @Test
   public void thatShortenerFailsIfTheURLisWrong() throws Exception {
-    configureSave(null, null);
+    configureSave(null, null, true);
 
     mockMvc.perform(post("/link").param("url", "someKey"))
             .andDo(print())
@@ -88,7 +88,7 @@ public class UrlShortenerTests {
 
   @Test
   public void thatShortenerSucceedsIfTheURLisCorrect() throws Exception {
-    configureSave(null, null);
+    configureSave(null, null, true);
 
     mockMvc.perform(post("/link").param("url", "https://www.google.com"))
             .andDo(print())
@@ -97,7 +97,7 @@ public class UrlShortenerTests {
 
   @Test
   public void thatShortenerCreatesARedirectIfTheURLisOK() throws Exception {
-    configureSave(null, null);
+    configureSave(null, null, true);
 
     mockMvc.perform(post("/link").param("url", "http://example.com/"))
             .andDo(print())
@@ -108,7 +108,7 @@ public class UrlShortenerTests {
 
   @Test
   public void thatShortenerCreatesARedirectWithSponsor() throws Exception {
-    configureSave("http://sponsor.com/", null);
+    configureSave("http://sponsor.com/", null, true);
 
     mockMvc.perform(post("/link").param("url", "http://example.com/").param("sponsor", "http://sponsor.com/"))
             .andDo(print()).andExpect(redirectedUrl("http://localhost/f684a3c4"))
@@ -121,11 +121,9 @@ public class UrlShortenerTests {
 
   @Test
   public void thatRedirectToReturnsTemporaryRedirectIfKeyExists() throws Exception {
+    configureSave(null, null, true);
 
-    configureSave(null, null);
-
-    when(shortUrlService.findByKey("f684a3c4")).thenReturn(safeUrlWithParameters(null, null));
-    when(sponsorResource.getFile()).thenReturn(new File("classpath:static/sponsor.html"));
+    when(shortUrlService.findByKey("f684a3c4")).thenReturn(urlWithParameters(null, null, true));
 
     mockMvc.perform(get("/{id}", "f684a3c4"))
             .andDo(print())
@@ -149,15 +147,15 @@ public class UrlShortenerTests {
   }
 
   @Test
-  public void thatShortenerReturnsAQRWhenItisStored() throws Exception {
+  public void thatShortenerReturnsAQRWhenItIsStored() throws Exception {
 
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     QRCode.from("http://localhost/f684a3c4").writeTo(oos);
 
-    configureSave(null, new URI("http://localhost/qr/f684a3c4"));
+    configureSave(null, new URI("http://localhost/qr/f684a3c4"), true);
     configureSaveQR();
     when(shortUrlService.findByKey("f684a3c4"))
-        .thenReturn(urlWithParameters(null, new URI("http://localhost/qr/f684a3c4")));
+        .thenReturn(urlWithParameters(null, new URI("http://localhost/qr/f684a3c4"), true));
 
     mockMvc.perform(get("/qr/{hash}.{format}", "f684a3c4", "png"))
             .andDo(print())
@@ -217,23 +215,17 @@ public class UrlShortenerTests {
   }
 
 
-  private void configureSave(String sponsor, URI qrUri) {
+  private void configureSave(String sponsor, URI qrUri, boolean safe) {
     when(shortUrlService.save(any(), any(), any(), anyBoolean()))
-        .then((Answer<ShortURL>) invocation -> urlWithParameters(sponsor, qrUri));
+        .then((Answer<ShortURL>) invocation -> urlWithParameters(sponsor, qrUri, safe));
   }
 
   private void configureSaveQR() throws InterruptedException, ExecutionException {
     when(qrService.findByHash(any())).then((Answer<QR>) invocation -> new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR()));
   }
 
-  private ShortURL urlWithParameters(String sponsor, URI qrUri) {
+  private ShortURL urlWithParameters(String sponsor, URI qrUri, boolean safe) {
     return new ShortURL("f684a3c4", "http://example.com/", URI.create("http://localhost/f684a3c4"), sponsor, null, null,
-        0, false, null, null, qrUri, null);
+        0, safe, null, null, qrUri, null);
   }
-
-  private ShortURL safeUrlWithParameters(String sponsor, URI qrUri) {
-    return new ShortURL("f684a3c4", "http://example.com/", URI.create("http://localhost/f684a3c4"), sponsor, null, null,
-            0, true, null, null, qrUri, null);
-  }
-
 }
