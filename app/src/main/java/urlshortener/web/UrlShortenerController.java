@@ -207,7 +207,9 @@ public class UrlShortenerController {
         }
       }
       catch(Exception e){
-        return new ResponseEntity<>(e, HttpStatus.INTERNAL_SERVER_ERROR);
+        HttpHeaders h = new HttpHeaders();
+        h.setContentType(MediaType.APPLICATION_JSON);
+        return new ResponseEntity<>(e, h, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
     return error("Provided hash has not been found or is not valid", HttpStatus.NOT_FOUND);
@@ -278,13 +280,6 @@ public class UrlShortenerController {
       log.error(e.toString());
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
-  }
-
-  @RequestMapping(value = "/failure", method = RequestMethod.GET)
-  public ResponseEntity<?> failure(/*@RequestParam("body") String body,*/
-      HttpServletRequest request) {
-      log.error("Failure: "/* + body*/);
-      return new ResponseEntity<>(/*body*/ "shit", HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   public void safeBrowsingCheck(ShortURL su, String url) {
@@ -386,7 +381,9 @@ public class UrlShortenerController {
   private ResponseEntity<?> error(String message, HttpStatus status) {
     HashMap<String, String> map = new HashMap<>();
     map.put("error", message);
-    return new ResponseEntity<>(map, status);
+    HttpHeaders h = new HttpHeaders();
+    h.setContentType(MediaType.APPLICATION_JSON);
+    return new ResponseEntity<>(map, h, status);
   }
 
   private CacheControl cacheConfig(int maxAge) {

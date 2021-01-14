@@ -14,6 +14,8 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.spring.*;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.junit.Test;
+
+import static org.bouncycastle.util.Strings.toByteArray;
 import static org.hamcrest.Matchers.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockserver.integration.ClientAndProxy.startClientAndProxy;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.matchers.Times.exactly;
@@ -96,7 +99,10 @@ public class TestCamelRoutingForQR{
   @EndpointInject("mock:host2/qr")
   protected MockEndpoint mock2;
 
+  private byte[] mockedQr;
+
   public void mockEndPoints() throws Exception {
+    mockedQr = mockQRCreation();
     ModelCamelContext mcc = camelContext.adapt(ModelCamelContext.class);
     RouteReifier.adviceWith(mcc.getRouteDefinition("qr"), mcc, new AdviceWithRouteBuilder() {
       @Override
@@ -105,8 +111,8 @@ public class TestCamelRoutingForQR{
                   .replace()
                   .process(new Processor() {
                     public void process(Exchange exchange) throws Exception {
-                      exchange.getOut().setBody(simple("mocked_response"));
-                      exchange.getOut().setHeader(Exchange.HTTP_RESPONSE_CODE, 200);
+                      exchange.getOut().setBody(mockedQr);
+                      exchange.getOut().setHeader(Exchange.HTTP_RESPONSE_CODE, 202);
                     }
                   });
       }
@@ -121,40 +127,24 @@ public class TestCamelRoutingForQR{
     ResponseEntity<String> link = postLink("http://www.google.es");
 
     String hash = JsonPath.parse(link.getBody()).read("$.hash");
-    ResponseEntity<String> qr = restTemplate.getForEntity("/qr/" + hash, String.class);
+    ResponseEntity<byte[]> qr = restTemplate.getForEntity("/qr/" + hash, byte[].class);
 
     assertThat(qr.getStatusCode(), is(HttpStatus.ACCEPTED));
-    assertThat(qr.getBody(), is("mocked_response"));
+    assertArrayEquals(qr.getBody(), mockedQr);
 
-    /*
-    assertThat(entityQR.getHeaders().getLocation(),
-        is(new URI("http://localhost:" + this.port + "/qr/69aafe10")));
-    assertThat(entityQR.getHeaders().getContentType(), is(new MediaType("application", "image/png"))); //is image?
-
-    assertThat(entityQR.getHeaders().get("hash").size(), is(1));  //has only one hash?
-    assertThat(entityQR.getHeaders().get("hash").get(0), is("69aafe10")); //hash is correct?
-
-    byte[] rc = entityQR.getBody();
-
-
-    QRCode qr = QRCode.from(JsonPath.parse(entityLink.getBody()).read("$.uri").toString());
-    assertArrayEquals(toByteArray(qr), rc); //code is correct?*/
     }
+
     private ResponseEntity<String> postLink(String url) {
       MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
       parts.add("url", url);
       return restTemplate.postForEntity("/link", parts, String.class);
     }
 
-    /*private Message post(String endpointUri, String url) {
-      MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
-      parts.add("url", url);
-      return template.send(endpointUri, new Processor() {
-        public void process(Exchange exchange) throws Exception {
-          exchange.getIn().setBody(url);
-        }
-      }).getOut();
-    }*/
+    public byte[] mockQRCreation() {
+      ByteArrayOutputStream oos = new ByteArrayOutputStream();
+      QRCode.from("mocked_QR").to(ImageType.PNG).writeTo(oos);
+      return oos.toByteArray();
+    }
 
 }
 
@@ -162,12 +152,4 @@ public class TestCamelRoutingForQR{
 
 
 
-/*
-public ClientHttpResponse mockQRCreation(String hash) {
-  ByteArrayOutputStream oos = new ByteArrayOutputStream();
-  QRCode.from("http://localhost:8080/" + hash).to(ImageType.PNG).writeTo(oos);
-  MockClientHttpResponse response = new MockClientHttpResponse(oos.toByteArray(), HttpStatus.CREATED);
-  response.getHeaders().add("Content-Type", "image/png");
-  response.getHeaders().add("Cache-Control", "public, max-age=864000");
-  return response;
-  }*/
+

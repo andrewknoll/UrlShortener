@@ -61,7 +61,7 @@ public class QRRepositoryTests {
   public void thatSaveADuplicateHashIsSafelyIgnored() {
     shortURLrep.save(url1());
     repository.save(qr1());
-    assertNotNull(repository.save(qr1()));
+    assertNull(repository.save(qr1()));
     assertSame(jdbc.queryForObject("select count(*) from QRCode",
         Integer.class), 1);
   }
