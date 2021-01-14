@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URLEncoder;
 
 @RestController
-@OpenAPIDefinition(info = @Info(title = "URL Shortener API", description = "REST API to short URLs", version = "1.0"))
+@OpenAPIDefinition(info = @Info(title = "URL Shortener API", description = "REST API to shorten URLs", version = "1.0"))
 public class UrlShortenerController {
 
   private static final Logger log = LoggerFactory.getLogger(UrlShortenerController.class);
@@ -218,11 +218,11 @@ public class UrlShortenerController {
   }
 
   @RequestMapping(value = { "/qr/{hash}", "/qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
-  @Operation(method = "GET", description = "Retrieves a QR code for a given previously saved hash")
+  @Operation(method = "GET", description = "Retrieves a QR code for a given previously saved hash, either from database or from the QR service endpoints")
   @Parameter(name = "hash", required = true, example = "f684a3c4")
-  @Parameter(name = "format", required = false)
-  @ApiResponses(value = { @ApiResponse(responseCode = "202", description = "QR code generated."),
-      @ApiResponse(responseCode = "500", description = "Internal exceltion") })
+  @Parameter(name = "format", description = "Image format. Only accepts PNG in this version", required = false)
+  @ApiResponses(value = { @ApiResponse(responseCode = "202", description = "QR code received correctly from QR endpoints, or retrieved from database / cache"),
+      @ApiResponse(responseCode = "500", description = "An unexpected exception was thrown, or QR code could not be retrieved / received") })
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {

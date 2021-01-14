@@ -2,6 +2,12 @@ package urlshortener.web;
 
 import javax.servlet.http.HttpServletRequest;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.net.URLDecoder;
 
 @RestController
+@OpenAPIDefinition(info = @Info(title = "QR Service API", description = "REST API to generate QR codes", version = "1.0"))
 public class QRController {
 
   private final QRService qrService;
@@ -32,6 +39,11 @@ public class QRController {
   }
 
   @RequestMapping(value = { "/qr" }, method = RequestMethod.GET, produces = "image/png")
+  @Operation(method = "GET", description = "Returns a QR code for URL corresponding to the indicated parameters (origin/hash)")
+  @Parameter(name = "hash", required = true, example = "f684a3c4")
+  @Parameter(name = "origin", description = "URL where the UrlShortenerController is hosted", required = false)
+  @ApiResponses(value = { @ApiResponse(responseCode = "202", description = "QR code was asynchronously created"),
+          @ApiResponse(responseCode = "500", description = "An unexpected exception was thrown") })
   public ResponseEntity<?> retrieveQRCodebyHash(@RequestParam("origin") String origin, @RequestParam("hash") String hash,
       HttpServletRequest request) {
       try {
