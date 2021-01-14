@@ -71,7 +71,7 @@ public class ShortURLRepositoryTests {
   @Test
   public void thatSaveADuplicateHashIsSafelyIgnored() {
     repository.save(url1());
-    assertNotNull(repository.save(url1()));
+    assertNull(repository.save(url1()));
     assertSame(jdbc.queryForObject("select count(*) from SHORTURL",
         Integer.class), 1);
   }
