@@ -48,45 +48,22 @@ public class SystemTests {
   }
 
   @Test
-  public void testHome() {
-    ResponseEntity<String> entity = restTemplate.getForEntity("/", String.class);
-    assertThat(entity.getStatusCode(), is(HttpStatus.OK));
-    assertNotNull(entity.getHeaders().getContentType());
-    assertTrue(
-        entity.getHeaders().getContentType().isCompatibleWith(new MediaType("text", "html")));
-    assertThat(entity.getBody(), containsString("<title>URL"));
-  }
-
-  @Ignore
-  @Test
   public void testQR() throws Exception {
 
-    ResponseEntity<String> entityLink = postLink("http://example.com/");
-
-    String hash = JsonPath.parse(entityLink.getBody()).read("$.hash");
-    ResponseEntity<byte[]> entityQR = restTemplate.getForEntity("/qr/" + hash, byte[].class);
+    ResponseEntity<byte[]> entityQR = restTemplate.getForEntity("/qr?origin=http://localhost:" + this.port + "&hash=f684a3c4", byte[].class);
 
     assertThat(entityQR.getStatusCode(), is(HttpStatus.ACCEPTED));
     assertThat(entityQR.getHeaders().getLocation(),
         is(new URI("http://localhost:" + this.port + "/qr/f684a3c4")));
-    assertThat(entityQR.getHeaders().getContentType(), is(new MediaType("application", "octet-stream"))); //is byte stream?
+    assertThat(entityQR.getHeaders().getContentType(), is(new MediaType("image", "png"))); //is byte stream?
 
     assertThat(entityQR.getHeaders().get("hash").size(), is(1));  //has only one hash?
     assertThat(entityQR.getHeaders().get("hash").get(0), is("f684a3c4")); //hash is correct?
 
     byte[] rc = entityQR.getBody();
-    
 
-    QRCode qr = QRCode.from(JsonPath.parse(entityLink.getBody()).read("$.uri").toString());
+    QRCode qr = QRCode.from("http://localhost:" + this.port + "/f684a3c4");
     assertArrayEquals(toByteArray(qr), rc); //code is correct?
     
   }
-
-  private ResponseEntity<String> postLink(String url) {
-    MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
-    parts.add("url", url);
-    return restTemplate.postForEntity("/link", parts, String.class);
-  }
-
-
 }

@@ -140,9 +140,8 @@ public class UrlShortenerTests {
     mockMvc.perform(post("/link").param("url", "someKey")).andDo(print()).andExpect(status().isBadRequest());
   }
 
-  @Ignore
   @Test
-  public void thatShortenerCreatesAQRIfTheHashIsStored() throws Exception {
+  public void thatShortenerReturnsAQRWhenItisStored() throws Exception {
 
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
     QRCode.from("http://localhost/f684a3c4").writeTo(oos);
@@ -160,7 +159,6 @@ public class UrlShortenerTests {
             .andExpect(content().bytes(oos.toByteArray()));
   }
 
-  @Ignore
   @Test
   public void thatRetrieveQRCodeByHashReturnsAcceptedIfKeyExists() throws Exception {
 
@@ -176,14 +174,12 @@ public class UrlShortenerTests {
             .andExpect(content().bytes(oos.toByteArray()));
   }
 
-  @Ignore
   @Test
   public void thatRetrieveQRByHashReturnsNotFoundIdIfKeyDoesNotExist() throws Exception {
     when(qrService.findByHash("someKey")).thenReturn(null);
+    when(shortUrlService.findByKey("someKey")).thenReturn(null);
 
-    mockMvc.perform(get("/qr/{hash}", "someKey"))
-            .andDo(print())
-            .andExpect(status().isNotFound());
+    mockMvc.perform(get("/qr/{hash}", "someKey")).andExpect(status().isNotFound());
   }
 
   @Test
@@ -219,8 +215,7 @@ public class UrlShortenerTests {
   }
 
   private void configureSaveQR() throws InterruptedException, ExecutionException {
-    when(qrService.save(any())).then((Answer<CompletableFuture<QR>>) invocation -> CompletableFuture
-        .completedFuture(new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR())));
+    when(qrService.findByHash(any())).then((Answer<QR>) invocation -> new QR("f684a3c4", URI.create("http://localhost/f684a3c4"), qr1().getQR()));
   }
 
   private ShortURL urlWithParameters(String sponsor, URI qrUri) {
