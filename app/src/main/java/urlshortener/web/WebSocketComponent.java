@@ -46,16 +46,12 @@ public class WebSocketComponent {
     private ShortURLService shortUrlService;
 
     @Autowired
-    private ClickService clickService;
-
-    @Autowired
     private SafeCheckService safeCheckService;
 
     @MessageMapping("/user")
-    @SendTo("/reply/shorturl")
+    @SendToUser("/reply/shorturl")
     public JSONUrl getShortUrl(String url) throws UnknownHostException {
-        UrlValidator urlValidator = new UrlValidator(new String[]{"http", "https"},
-                UrlValidator.ALLOW_2_SLASHES);
+        UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" }, UrlValidator.ALLOW_2_SLASHES);
         if (urlValidator.isValid(url)) {
             ShortURL su = shortUrlService.save(url, null, null, false);
             safeBrowsingCheck(su, url);
@@ -74,8 +70,7 @@ public class WebSocketComponent {
         UrlShortenerController.googleSafeBrowsing(su, url, safeCheckService, shortUrlService);
     }
 
-
-    private class JSONUrl{
+    private class JSONUrl {
         private String hash;
         private String hostname;
 
