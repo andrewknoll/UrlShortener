@@ -26,7 +26,6 @@ public class WebSocketsRouter extends RouteBuilder {
 
     @Override
     public void configure() {
-
         from("websocket://localhost:50000/link").process(exchange -> {
             String url = exchange.getIn().getBody(String.class);
             UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" },
@@ -39,7 +38,6 @@ public class WebSocketsRouter extends RouteBuilder {
                 exchange.getIn().setBody("Invalid url");
             }
         }).to("websocket://localhost:50000/link");
-
     }
 
     public void safeBrowsingCheck(ShortURL su, String url) {
