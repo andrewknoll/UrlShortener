@@ -31,6 +31,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import urlshortener.domain.QR;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
@@ -55,6 +64,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URLEncoder;
 
 @RestController
+@OpenAPIDefinition(info = @Info(title = "URL Shortener API", description = "REST API to short URLs", version = "1.0"))
 public class UrlShortenerController {
 
   private static final Logger log = LoggerFactory.getLogger(UrlShortenerController.class);
@@ -86,7 +96,7 @@ public class UrlShortenerController {
   }
 
   /**
-   *
+   * 
    * @param url        input URL to being shorted
    * @param sponsor    sponsor assigned in case we had some
    * @param generateQR input to know if we have to generate a QR
@@ -98,7 +108,16 @@ public class UrlShortenerController {
    * @throws IOException
    * @throws URISyntaxException
    */
-  @RequestMapping(value = "/link", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+
+  @RequestMapping(value = "/link", method = RequestMethod.POST)
+  @Operation(method = "POST", description = "Given an url, it returns the short url that redirects to the original. A QR code can also be generated for the short url")
+  @Parameters(value = {
+      @Parameter(name = "url", description = "URL to shorten", required = true, example = "https://example.com/"),
+      @Parameter(name = "sponsor", description = "Name of the sponsor", required = false, example = "BBVA"),
+      @Parameter(name = "generateQR", description = "Choose to generate a QR for the shortened URL") })
+  @ApiResponses(value = { @ApiResponse(responseCode = "201", description = "Short URL was successfully created."),
+      @ApiResponse(responseCode = "206", description = "Short url was generated but qr code wasn't"),
+      @ApiResponse(responseCode = "400", description = "The provided URL doesn't have a valid format (doesnt't start with http or https).") })
   public ResponseEntity<?> shortener(@RequestParam("url") String url,
       @RequestParam(value = "sponsor", required = false) String sponsor,
       @RequestParam(value = "generateQR", defaultValue = "false") boolean generateQR, HttpServletRequest request)
@@ -134,13 +153,19 @@ public class UrlShortenerController {
 
   /**
    *
-   * @param id      hash from shorted URL
-   * @param request HTTPServletRequest
-   * @return Status code 307 and sponsor page if hash exists Status code 400 if
-   *         final URI unreachable Status code 403 if Google Safe Browsing does
-   *         not validate Status code 404 if hash does not exist
+   * @param String             id hash from shorted URL
+   * @param HttpServletRequest request HTTPServletRequest
+   * @return String Status code 307 and sponsor page if hash exists Status code
+   *         400 if final URI unreachable Status code 403 if Google Safe Browsing
+   *         does not validate Status code 404 if hash does not exist
    */
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
+  @Operation(method = "GET", description = "Redirects from the shortened URL to target URL")
+  @Parameter(name = "id", description = "Hash associated to the target URL", required = true, example = "f684a3c4")
+  @ApiResponses(value = { @ApiResponse(responseCode = "307", description = "Redirecting to the target URL."),
+      @ApiResponse(responseCode = "403", description = "The target URL has not been verified yet or has been marked by Google Safe Browsing as unsafe.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{ error: \"URL marked by Google Safe Browsing as SOCIAL_ENGINEERING\"}"))),
+      @ApiResponse(responseCode = "404", description = "ID not found un the system.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{ error: \"Provided hash has not been found or is not valid\"}"))),
+      @ApiResponse(responseCode = "400", description = "The target URL is not reachable.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{ error: \"URI not reachable\"}"))) })
   public ResponseEntity<?> redirectTo(@PathVariable String id, HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
@@ -170,6 +195,8 @@ public class UrlShortenerController {
    *         seconds to redirect
    */
   @RequestMapping(value = "/redirect/{hash:(?!link|index).*}", method = RequestMethod.GET)
+  @Operation(method = "GET", description = "Redirects to target URL through a http event.")
+  @Parameter(name = "hash", description = "Hash associated to the target URL", required = true, example = "f684a3c4")
   public SseEmitter getFinalURI(@PathVariable String hash) {
     long sleepingTimeMS = 5000;
     SseEmitter emitter = new SseEmitter();
@@ -191,6 +218,11 @@ public class UrlShortenerController {
   }
 
   @RequestMapping(value = { "/qr/{hash}", "/qr/{hash}.{format}" }, method = RequestMethod.GET, produces = "image/png")
+  @Operation(method = "GET", description = "Retrieves a QR code for a given previously saved hash")
+  @Parameter(name = "hash", required = true, example = "f684a3c4")
+  @Parameter(name = "format", required = false)
+  @ApiResponses(value = { @ApiResponse(responseCode = "202", description = "QR code generated."),
+      @ApiResponse(responseCode = "500", description = "Internal exceltion") })
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
     if (defaultFormat.equals(format) || format == null) {
@@ -241,6 +273,12 @@ public class UrlShortenerController {
    * @throws IOException
    */
   @RequestMapping(value = "/multipleLinks", method = RequestMethod.POST, produces = "text/csv")
+  @Operation(method = "POST", description = "Given a CSV file with URLs, it returns another CSV containing the original URLs, as well as their corresponding short URLs and information about the problems with the target URL if there are any.")
+  @Parameter(name = "urls", description = "CSV File containing the target URLs", required = true, example = "Urls.csv")
+
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "Output CSV file created successfully", content = @Content(mediaType = "text/csv")),
+      @ApiResponse(responseCode = "500", description = "IO exception processing the file") })
   public ResponseEntity<String> multipleShortener(@RequestParam("urls") MultipartFile urls,
       HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] { "http", "https" });
@@ -307,6 +345,7 @@ public class UrlShortenerController {
     }
   }
 
+  // Method to check if the provided URL is safe with the google safe browsing API
   public void safeBrowsingCheck(ShortURL su, String url) {
     googleSafeBrowsing(su, url, safeCheckService, shortUrlService);
   }
@@ -352,7 +391,7 @@ public class UrlShortenerController {
       SponsorCache sc = SponsorCache.getInstance();
       String data = sc.find("sponsor");
       // Cached
-      if(data == null) {
+      if (data == null) {
         data = new String(Files.readAllBytes(resource.toPath()));
         data = sc.put("sponsor", data);
       }
