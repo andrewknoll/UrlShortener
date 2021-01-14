@@ -32,10 +32,10 @@ public class QRService {
   @Autowired
   private Environment environment;
 
-  private final QRRepository QRRepository;
+  private final QRRepository qrRepository;
 
   public QRService(QRRepository QRRepository) {
-    this.QRRepository = QRRepository;
+    this.qrRepository = QRRepository;
   }
 
   public QR findByHash(String id) {
@@ -44,9 +44,9 @@ public class QRService {
     if (result != null) {
       return result;
     }
-    return cache.put(id, QRRepository.findByHash(id));
+    return cache.put(id, qrRepository.findByHash(id));
   }
-//TODO:Estilo
+
   @Async("asyncWorker")
   public CompletableFuture<QR> save(ShortURL su) throws InterruptedException {
     ByteArrayOutputStream oos = new ByteArrayOutputStream();
@@ -60,7 +60,7 @@ public class QRService {
       }
     }).code(oos.toByteArray()).build();
 
-    return CompletableFuture.completedFuture(QRRepository.save(qr));
+    return CompletableFuture.completedFuture(qrRepository.save(qr));
   }
 
   private String getServerIP() throws UnknownHostException {
