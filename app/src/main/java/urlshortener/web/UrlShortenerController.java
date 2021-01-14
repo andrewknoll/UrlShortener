@@ -73,16 +73,16 @@ public class UrlShortenerController {
   private final String defaultFormat = "png";
 
   // Path to sponsor.html file
-  @Value("classpath:static/sponsor.html")
-  Resource sponsorResource;
+  private Resource sponsorResource;
 
   public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService, QRService qrService,
-      SafeCheckService safeCheckService, ProducerTemplate producerTemplate) throws IOException {
+      SafeCheckService safeCheckService, ProducerTemplate producerTemplate, @Value("classpath:static/sponsor.html") Resource sponsorResource) throws IOException {
     this.shortUrlService = shortUrlService;
     this.clickService = clickService;
     this.qrService = qrService;
     this.safeCheckService = safeCheckService;
     this.producerTemplate = producerTemplate;
+    this.sponsorResource = sponsorResource;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -93,7 +93,7 @@ public class UrlShortenerController {
       // If URL is safe and reachable, redirect
       if (l.getSafe() && this.reachableURL(finalURL)) {
         clickService.saveClick(id, extractIP(request));
-        return redirectThroughSponsor();
+        return redirectThroughSponsor(l.getTarget());
       } else if (!l.getSafe()) {
         // If not safe return Forbidden 403
         String json = Json.createObjectBuilder().add("error", l.getDescription()).build().toString();
@@ -319,7 +319,7 @@ public class UrlShortenerController {
   /**
    * Function that shows sponsor.html page before redirecting to final URI
    */
-  private ResponseEntity<?> redirectThroughSponsor() {
+  private ResponseEntity<?> redirectThroughSponsor(String target) {
     try {
       // Reading HTML file
       File resource = sponsorResource.getFile();
@@ -331,6 +331,12 @@ public class UrlShortenerController {
       }
       // Shows sponsor.html page without changing location
       HttpHeaders h = new HttpHeaders();
+      try {
+        h.setLocation(new URI(target));
+      }
+      catch(URISyntaxException use){
+        h.setLocation(null);
+      }
       h.setCacheControl(cacheConfig(1));
       return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
 

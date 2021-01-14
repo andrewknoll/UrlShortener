@@ -20,6 +20,7 @@ import static urlshortener.fixtures.ShortURLFixture.someUrl;
 import static urlshortener.fixtures.ShortURLFixture.url1;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -43,6 +46,7 @@ import urlshortener.service.ClickService;
 import urlshortener.service.QRService;
 import urlshortener.service.SafeCheckService;
 import urlshortener.service.ShortURLService;
+
 
 public class UrlShortenerTests {
 
@@ -62,6 +66,9 @@ public class UrlShortenerTests {
 
   @InjectMocks
   private UrlShortenerController urlShortener;
+
+  @Mock
+  private Resource sponsorResource;
 
   @Before
   public void setup() {
@@ -112,12 +119,13 @@ public class UrlShortenerTests {
             .andExpect(jsonPath("$.sponsor", is("http://sponsor.com/")));
   }
 
-  @Ignore
   @Test
   public void thatRedirectToReturnsTemporaryRedirectIfKeyExists() throws Exception {
+
     configureSave(null, null);
 
-    when(shortUrlService.findByKey("f684a3c4")).thenReturn(null);
+    when(shortUrlService.findByKey("f684a3c4")).thenReturn(safeUrlWithParameters(null, null));
+    when(sponsorResource.getFile()).thenReturn(new File("classpath:static/sponsor.html"));
 
     mockMvc.perform(get("/{id}", "f684a3c4"))
             .andDo(print())
@@ -221,6 +229,11 @@ public class UrlShortenerTests {
   private ShortURL urlWithParameters(String sponsor, URI qrUri) {
     return new ShortURL("f684a3c4", "http://example.com/", URI.create("http://localhost/f684a3c4"), sponsor, null, null,
         0, false, null, null, qrUri, null);
+  }
+
+  private ShortURL safeUrlWithParameters(String sponsor, URI qrUri) {
+    return new ShortURL("f684a3c4", "http://example.com/", URI.create("http://localhost/f684a3c4"), sponsor, null, null,
+            0, true, null, null, qrUri, null);
   }
 
 }
