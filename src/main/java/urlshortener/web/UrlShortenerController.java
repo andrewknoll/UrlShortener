@@ -327,11 +327,6 @@ public class UrlShortenerController {
       }
       // Shows sponsor.html page without changing location
       HttpHeaders h = new HttpHeaders();
-      try {
-        h.setLocation(new URI(target));
-      } catch (URISyntaxException use) {
-        h.setLocation(null);
-      }
       h.setCacheControl(cacheConfig(1));
       return new ResponseEntity<>(data, h, HttpStatus.TEMPORARY_REDIRECT);
 
