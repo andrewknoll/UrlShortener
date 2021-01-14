@@ -222,6 +222,7 @@ public class UrlShortenerController {
   @Parameter(name = "hash", required = true, example = "f684a3c4")
   @Parameter(name = "format", description = "Image format. Only accepts PNG in this version", required = false)
   @ApiResponses(value = { @ApiResponse(responseCode = "202", description = "QR code received correctly from QR endpoints, or retrieved from database / cache"),
+      @ApiResponse(responseCode = "Other", description = "QR service controller returned a code that wasn't 202"),
       @ApiResponse(responseCode = "500", description = "An unexpected exception was thrown, or QR code could not be retrieved / received") })
   public ResponseEntity<?> retrieveQRCodebyHash(@PathVariable String hash,
       @PathVariable(required = false) String format, HttpServletRequest request) throws URISyntaxException {
