@@ -184,6 +184,7 @@ public class UrlShortenerController {
 
     try {
       Thread.sleep(sleepingTimeMS);
+      log.debug("Sending: " + finalURI);
       emitter.send(finalURI);
     } catch (Exception e) {
       emitter.completeWithError(e);
@@ -346,6 +347,9 @@ public class UrlShortenerController {
       try {
         String data = sc.find("sponsor");
         // Cached
+        if(data == null) {
+          data = sc.put("sponsor", new String(Files.readAllBytes(resource.toPath())));
+        }
         // Shows sponsor.html page without changing location
         HttpHeaders h = new HttpHeaders();
         h.setCacheControl(cacheConfig(1));
